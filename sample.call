@@ -1,4 +1,4 @@
-#
+# Another sample call update for testing
 # This is a sample file that can be dumped in /var/spool/asterisk/outgoing
 # to generate a call.  For Asterisk to read call files, you must have the
 # pbx_spool.so module loaded.
