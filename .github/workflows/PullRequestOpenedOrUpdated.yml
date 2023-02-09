@@ -1,0 +1,48 @@
+name: PullRequestOpenedOrUpdated
+run-name: ${{ github.actor }} has submitted a pull request
+on:
+#  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  SimpleChecks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install needed progs
+        run: |
+          sudo apt-get install jq -y
+
+      - name: Checkout Asterisk
+#        if: ${{ !env.ACT }}
+        uses: actions/checkout@v3
+        with:
+          clean: true
+          fetch-depth: 1
+          set-safe-directory: true
+
+      - name: Check for Labels
+        uses: ./.github/actions/CheckPRforLabels
+        with:
+          require_only_one_of: "(bug|enhancement|documentation)"
+          require_at_least_one_of: "cherry-pick-.*"
+#      - name: Check for issue
+#        env:
+#          BODY: ${{ toJSON(github.event.pull_request.body) }}
+#        run: |
+#          echo "BODY: $BODY"
+#          msg=$(echo "$BODY" | sed -n -r -e "s/(Closes|Resolves):\s+#([0-9]+)/::notice::The PR \1 issue \2/gp")
+#          if [ -n "$msg" ] ; then
+#            echo "$msg"
+#            has_issue=1
+#            rc=0
+#          else
+#          	echo "::error::The PR does not have an issue associated with it"
+#            has_issue=0
+#            rc=1
+#          fi
+#          exit $rc
+#
+  UnitTests:
+    needs: SimpleChecks
+    uses: ./.github/workflows/RunUnitTests.yml
