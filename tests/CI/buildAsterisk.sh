@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 COVERAGE=0
 REF_DEBUG=0
 DISABLE_BINARY_MODULES=0
@@ -97,7 +98,7 @@ _libdir=`${CIDIR}/findLibdir.sh`
 
 _version=$(./build_tools/make_version .)
 for var in BRANCH_NAME MAINLINE_BRANCH OUTPUT_DIR CACHE_DIR CCACHE_DISABLE CCACHE_DIR _libdir _version ; do
-	declare -p $var || :
+	declare -p $var 2>/dev/null || :
 done
 
 common_config_args="--prefix=/usr ${_libdir:+--libdir=${_libdir}} --sysconfdir=/etc --with-pjproject-bundled"
