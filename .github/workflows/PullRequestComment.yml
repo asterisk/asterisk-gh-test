@@ -1,0 +1,24 @@
+name: PullRequestComment
+run-name: ${{ github.actor }} has added a PR comment
+# PR comments are reported via issue_comments
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  PushToCI:
+  # Only run if the comment was on a PR
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: pushit
+        env:
+          PAYLOAD: ${{ toJSON(github.event) }}
+          GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
+        run: |
+          echo "::group::crap"
+          echo '{ "event_type": "PullRequestComment", "client_payload": ' > payload.json
+          echo $PAYLOAD >> payload.json
+          echo " }"  >> payload.json
+          echo "::endgroup"
+          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json

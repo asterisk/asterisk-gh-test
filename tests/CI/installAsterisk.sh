@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 UNINSTALL=0
 UNINSTALL_ALL=0
 source $CIDIR/ci.functions
@@ -24,8 +25,14 @@ declare -p destdir
 [ $UNINSTALL -gt 0 ] && ${MAKE} ${destdir} uninstall
 [ $UNINSTALL_ALL -gt 0 ] && ${MAKE} ${destdir} uninstall-all
 
-${MAKE} ${destdir} install || ${MAKE} ${destdir} NOISY_BUILD=yes install || exit 1
-${MAKE} ${destdir} samples install-headers
+if [ x"$OUTPUT_DIR" != x ] ; then
+	log_to=${OUTPUT_DIR}/install.log
+else
+	log_to=/dev/stdout
+fi
+
+${MAKE} ${destdir} install > "${log_to}" || ${MAKE} ${destdir} NOISY_BUILD=yes install > "${log_to}" || exit 1
+${MAKE} ${destdir} samples install-headers >> "${log_to}"
 if [ x"$DESTDIR" != x ] ; then
 	sed -i -r -e "s@\[directories\]\(!\)@[directories]@g" $DESTDIR/etc/asterisk/asterisk.conf
 	sed -i -r -e "s@ /(var|etc|usr)/@ $DESTDIR/\1/@g" $DESTDIR/etc/asterisk/asterisk.conf

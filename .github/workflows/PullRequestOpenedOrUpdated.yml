@@ -1,0 +1,21 @@
+name: PullRequestOpenedOrUpdated
+run-name: ${{ github.actor }} has submitted a pull request
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  PushToCI:
+    runs-on: ubuntu-latest
+    steps:
+      - id: pushit
+        env:
+          PAYLOAD: ${{ toJSON(github.event) }}
+          GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
+        run: |
+          echo "::group::crap"
+          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
+          echo $PAYLOAD >> payload.json
+          echo " }"  >> payload.json
+          echo "::endgroup"
+          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
