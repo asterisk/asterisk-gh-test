@@ -1,0 +1,109 @@
+name: PullRequestComment
+run-name: "PR ${{github.event.issue.number}} : Comment by ${{ github.actor }}" 
+# PR comments are reported via issue_comments
+on:
+  workflow_dispatch:
+#  issue_comment:
+#    types: [created]
+
+env:
+  KEYWORD_REGEX: ${{vars.PR_COMMENT_KEYWORD_REGEX}}
+  CACHE_KEY: PR:${{ github.event.issue.number }}-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
+
+jobs:
+  PullRequestComment:
+  # Only run if the comment was on a PR
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    outputs:
+      keyword: ${{ steps.parse.outputs.keyword }}
+      commit: ${{ steps.parse.outputs.commit }}
+      base-branch: ${{ steps.parse.outputs.base-branch }}
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: DumpEnvironment
+        uses: /asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: ParseComment
+        id: parse
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          # Find the first match in the comment
+          kw=$(echo $BODY | sed -n -r -e "0,/^\s*${KEYWORD_REGEX}\s*$/s//keyword=\1/p")
+          if [ x"$kw" == x ] ; then
+            kw="keyword=NO_KEYWORDS"
+          fi
+          echo "$kw" >> "$GITHUB_OUTPUT"
+          echo "::notice::KW: $kw"
+          
+          commit=commit=$(gh api /repos/${{github.repository}}/pulls/${{github.event.issue.number}} --jq '.head.sha')
+          echo "$commit" >> "$GITHUB_OUTPUT"
+          echo "::notice::commit: $commit"
+          
+          base_branch=base-branch=$(gh api /repos/${{github.repository}}/pulls/${{github.event.issue.number}} --jq .base.ref)
+          echo "$base_branch" >> "$GITHUB_OUTPUT"
+          echo "::notice::BRANCH: $base_branch"
+
+        # There's no need to pre-build and cache for the unit tests
+      - name: Build and Cache Asterisk
+        if: endsWith(steps.parse.outputs.keyword, 'gate')
+        uses: asterisk/asterisk-ci-actions/BuildAndCacheAsterisk@main
+        with:
+          cache-key:         ${{ env.CACHE_KEY }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
+
+  AsteriskUnitTests:
+    needs: PullRequestComment
+    if: endsWith(needs.PullRequestComment.outputs.keyword, 'check')
+    strategy:
+      matrix:
+        group: [ all ]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Run Unit Tests
+        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+        with:
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          unittest-command:  ${{ vars.UNITTEST_COMMAND }}
+          modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
+
+  AsteriskGateTests:
+    needs: PullRequestComment
+    if: endsWith(needs.PullRequestComment.outputs.keyword, 'gate')
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(vars.GATETEST_LIST) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      
+      - name: Run Gate Tests for group ${{ matrix.group }}
+        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+        with:
+          cache-key:         ${{ env.CACHE_KEY }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
+          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
+          gatetest-group:    ${{ matrix.group }}
+          gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 

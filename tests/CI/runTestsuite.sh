@@ -21,7 +21,7 @@ fi
 if [ -f ./setupVenv.sh ] ; then
 	echo "Running in Virtual Environment"
 	# explicitly invoking setupVenv to capture output in case of failure
-	./setupVenv.sh
+	./setupVenv.sh >/dev/null
 	VENVPREFIX="runInVenv.sh python "
 else
 	echo "Running in Legacy Mode"
@@ -29,7 +29,7 @@ else
 fi
 
 echo "Running tests ${TESTSUITE_COMMAND} ${AST_WORK_DIR:+with work directory ${AST_WORK_DIR}}"
-./${VENVPREFIX}runtests.py --cleanup --timeout=${TEST_TIMEOUT} ${TESTSUITE_COMMAND} | contrib/scripts/pretty_print --no-color --no-timer --term-width=120 --show-errors || :
+./${VENVPREFIX}runtests.py --cleanup --timeout=${TEST_TIMEOUT} ${TESTSUITE_COMMAND} | contrib/scripts/pretty_print --no-color --no-timer --term-width=100 --show-errors || :
 
 if [ $REALTIME -eq 1 ] ; then
 	$CIDIR/teardownRealtime.sh --cleanup-db=${CLEANUP_DB:?0}

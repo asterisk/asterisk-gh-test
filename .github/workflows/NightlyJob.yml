@@ -1,0 +1,92 @@
+name: NightlyJob
+on:
+  workflow_dispatch:
+#  schedule:
+#    - cron: '0 2 * * *'
+
+env:
+  CACHE_KEY: Nightly-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
+
+jobs:
+  AsteriskNightlyBuildMatrix:
+    continue-on-error: false
+    strategy:
+      fail-fast: true
+      matrix:
+        branch: ${{ fromJSON(vars.NIGHTLYTEST_BRANCHES) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Build Asterisk for branch ${{ matrix.branch }}
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          to-cache-key: ${{env.CACHE_KEY}}-${{ matrix.branch }}
+          base-branch: ${{ matrix.branch }}
+          modules-blacklist: ${{ vars.NIGHTLYTEST_MODULES_BLACKLIST }}
+
+  AsteriskNightlyTestMatrix:
+    name: AsteriskNightlyTestMatrix
+    if: ${{ success() }}
+    needs: AsteriskNightlyBuildMatrix
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(vars.NIGHTLYTEST_BRANCHES) }}
+        group: ${{ fromJSON(vars.NIGHTLYTEST_LIST) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Install Asterisk for branch ${{ matrix.branch }}
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key: ${{env.CACHE_KEY}}-${{ matrix.branch }}
+          base-branch: ${{ matrix.branch }}
+          modules-blacklist: ${{ vars.NIGHTLYTEST_MODULES_BLACKLIST }}
+
+      - name: Run Gate Tests for branch ${{ matrix.branch }} group ${{ matrix.group }}
+        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+        with:
+          asterisk-repo:     ${{ github.repository }}
+          base-branch:       ${{ matrix.branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
+          gatetest-group:    ${{ matrix.group }}
+          gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 
+
+  AsteriskNightlyTests:
+    name: AsteriskNightlyTests
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: AsteriskNightlyTestMatrix
+    steps:
+      - name: Check test matrix status
+        env:
+          RESULT: ${{ needs.AsteriskNightlyTestMatrix.result }}
+        run: |
+          case $RESULT in
+            success)
+              echo "::notice::All Testsuite tests passed"
+              exit 0
+              ;;
+            skipped)
+              echo "::notice::No Testsuite tests were required"
+              exit 0
+              ;;
+              *)
+              echo "::error::One or more Testsuite tests failed" 
+              exit 1
+          esac
+
+  DeleteCache:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: AsteriskNightlyTests
+    steps:
+      - name: DeleteCache
+        uses: snnaplab/delete-branch-cache-action@v1
+        with:
+          ref: refs/heads/master
+          key: ${{env.CACHE_KEY}}

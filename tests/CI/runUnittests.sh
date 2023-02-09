@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 NO_EXPECT=0
+OUTPUT_DIR=/tmp/asterisk_ci/
+
 source $CIDIR/ci.functions
+
+if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
+	OUTPUT_DIR+=/
+fi
+
 ASTETCDIR=$DESTDIR/etc/asterisk
 
 asterisk_corefile_glob() {
@@ -16,6 +24,8 @@ asterisk_corefile_glob() {
 }
 
 run_tests_expect() {
+[ $GITHUB -eq 1 ] && echo "::group::run_tests"
+
 $EXPECT <<-EOF
 	spawn sudo $ASTERISK ${USER_GROUP:+-U ${USER_GROUP%%:*} -G ${USER_GROUP##*:}} -fcng -C $CONFFILE
 	match_max 512
@@ -34,9 +44,13 @@ $EXPECT <<-EOF
 	expect -notransfer "Executing last minute cleanups"
 	wait
 EOF
+[ $GITHUB -eq 1 ] && echo "::endgroup::"
+	xmlstarlet sel -t -v "//failure" $OUTPUTFILE && return 1
+	return 0
 }
 
 run_tests_socket() {
+	[ $GITHUB -eq 1 ] && echo "::group::run_tests"
 	sudo $ASTERISK ${USER_GROUP:+-U ${USER_GROUP%%:*} -G ${USER_GROUP##*:}} -gn -C $CONFFILE
 	for n in {1..5} ; do
 		sleep 3
@@ -44,10 +58,23 @@ run_tests_socket() {
 	done
 	sleep 1
 	$ASTERISK -rx "core show settings" -C $CONFFILE
-	$ASTERISK -rx "${UNITTEST_COMMAND:-test execute all}" -C $CONFFILE
+
+	if [ x"${UNITTEST_COMMAND}" != x ] ; then
+		IFS=';'
+		for test in ${UNITTEST_COMMAND} ; do
+			$ASTERISK -rx "$test" -C $CONFFILE
+		done
+		unset IFS
+	else
+		$ASTERISK -rx "test execute all" -C $CONFFILE
+	fi
+
 	$ASTERISK -rx "test show results failed" -C $CONFFILE
 	$ASTERISK -rx "test generate results xml $OUTPUTFILE" -C $CONFFILE
 	$ASTERISK -rx "core stop now" -C $CONFFILE
+	[ $GITHUB -eq 1 ] && echo "::endgroup::"
+	xmlstarlet sel -t -v "//failure" $OUTPUTFILE && return 1
+	return 0
 }
 
 # If DESTDIR is used to install and run asterisk from non standard locations,
@@ -102,29 +129,26 @@ EOF
 
 ASTERISK="$DESTDIR/usr/sbin/asterisk"
 CONFFILE=$ASTETCDIR/asterisk.conf
-OUTPUTDIR=${OUTPUT_DIR:-tests/CI/output/}
-OUTPUTFILE=${OUTPUT_XML:-${OUTPUTDIR}/unittests-results.xml}
+OUTPUTFILE=${OUTPUT_XML:-${OUTPUT_DIR}/unittests-results.xml}
 EXPECT="$(which expect 2>/dev/null || : )"
 
-[ ! -d ${OUTPUTDIR} ] && mkdir -p $OUTPUTDIR
-[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUTDIR
+[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUT_DIR
 
 rm -rf $ASTETCDIR/extensions.{ael,lua} || :
 
-set -x
+TESTRC=0
 if [ x"$EXPECT" != x -a $NO_EXPECT -eq 0 ] ; then
-	run_tests_expect
+	run_tests_expect || TESTRC=1
 else
-	run_tests_socket
+	run_tests_socket || TESTRC=1
 fi
 
 # Cleanup "just in case"
 sudo killall -qe -ABRT $ASTERISK
 
-runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUTDIR
-set +x
+runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUT_DIR
 
-[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUTDIR
+[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUT_DIR
 
 for core in $(asterisk_corefile_glob)
 do
@@ -132,8 +156,8 @@ do
 	then
 		echo "*** Found a core file ($core) after running unit tests ***"
 		set -x
-		sudo $DESTDIR/var/lib/asterisk/scripts/ast_coredumper --outputdir=$OUTPUTDIR --no-default-search $core
+		sudo $DESTDIR/var/lib/asterisk/scripts/ast_coredumper --outputdir=$OUTPUT_DIR --no-default-search $core
 	fi
 done
 
-exit 0
+exit $TESTRC

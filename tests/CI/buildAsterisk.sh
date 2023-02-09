@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 COVERAGE=0
 REF_DEBUG=0
 DISABLE_BINARY_MODULES=0
@@ -9,7 +10,13 @@ NO_MENUSELECT=0
 NO_MAKE=0
 NO_ALEMBIC=0
 NO_DEV_MODE=0
+OUTPUT_DIR=/tmp/asterisk_ci/
+
 source $CIDIR/ci.functions
+
+if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
+	OUTPUT_DIR+=/
+fi
 
 set -e
 
@@ -51,7 +58,7 @@ run_alembic() {
 	return $RC
 }
 
-[ x"$OUTPUT_DIR" != x ] && mkdir -p "$OUTPUT_DIR" 2> /dev/null
+mkdir -p "$OUTPUT_DIR" 2> /dev/null
 
 if [ -z $TESTED_ONLY ]; then
 	# Skip building untested modules by default if coverage is enabled.
@@ -59,7 +66,7 @@ if [ -z $TESTED_ONLY ]; then
 fi
 
 if [ -z $LCOV_DIR ]; then
-	LCOV_DIR="${OUTPUT_DIR:+${OUTPUT_DIR}/}lcov"
+	LCOV_DIR="${OUTPUT_DIR}/lcov"
 fi
 
 if [ x"$CACHE_DIR" != x ] ; then
@@ -67,38 +74,48 @@ if [ x"$CACHE_DIR" != x ] ; then
 fi
 
 if [ ${CCACHE_DISABLE:-0} -ne 1 ] ; then
-	if [ x"$CACHE_DIR" != x ] ; then
-		mkdir -p $CACHE_DIR/ccache
-		export CCACHE_UMASK=002
-		export CCACHE_DIR=$CACHE_DIR/ccache
-	fi
-	case ":${PATH:-}:" in
-		*:/usr/lib*/ccache:*)
-			echo "Enabling ccache at $CCACHE_DIR"
-		 ;;
-		*)
-			if [ -d /usr/lib64/ccache ] ; then
-				echo "Enabling ccache at /usr/lib64/ccache with $CCACHE_DIR"
-				export PATH="/usr/lib64/ccache${PATH:+:$PATH}"
-			elif [ -d /usr/lib/ccache ] ; then
-				echo "Enabling ccache at /usr/lib/ccache with $CCACHE_DIR"
-				export PATH="/usr/lib/ccache${PATH:+:$PATH}"
-			fi
-		;;
-	esac
+	echo "::notice::Setting up ccache"
+	begin_log "${OUTPUT_DIR}/ccache"
+	(	
+		if [ x"$CACHE_DIR" != x ] ; then
+			mkdir -p $CACHE_DIR/ccache
+			export CCACHE_UMASK=002
+			export CCACHE_DIR=$CACHE_DIR/ccache
+		fi
+		case ":${PATH:-}:" in
+			*:/usr/lib*/ccache:*)
+				echo "Enabling ccache"
+			 ;;
+			*)
+				if [ -d /usr/lib64/ccache ] ; then
+					echo "Enabling ccache at /usr/lib64/ccache with $CCACHE_DIR"
+					export PATH="/usr/lib64/ccache${PATH:+:$PATH}"
+				elif [ -d /usr/lib/ccache ] ; then
+					echo "Enabling ccache at /usr/lib/ccache with $CCACHE_DIR"
+					export PATH="/usr/lib/ccache${PATH:+:$PATH}"
+				fi
+			;;
+		esac
+	) >>"${log_to}" 2>>"${err_to}" || {	echo "::error::Ccache setup failed.  See ${err_to} for more details." ; exit 1 ; }
+	end_log
 fi
-
-runner ccache -s
-runner ulimit -a
 
 MAKE=`which make`
 PKGCONFIG=`which pkg-config`
 _libdir=`${CIDIR}/findLibdir.sh`
 
-_version=$(./build_tools/make_version .)
-for var in BRANCH_NAME MAINLINE_BRANCH OUTPUT_DIR CACHE_DIR CCACHE_DISABLE CCACHE_DIR _libdir _version ; do
-	declare -p $var || :
-done
+begin_log ${OUTPUT_DIR}/variables
+{
+	runner ccache -s
+	runner ulimit -a
+	_version=$(./build_tools/make_version .)
+	for var in BRANCH_NAME MAINLINE_BRANCH OUTPUT_DIR CACHE_DIR CCACHE_DISABLE CCACHE_DIR _libdir _version ; do
+		declare -p $var || :
+	done
+}  >>"$log_to" 2>>"$err_to"
+end_log
+
+echo "::notice::Creating configure arguments"
 
 common_config_args="--prefix=/usr ${_libdir:+--libdir=${_libdir}} --sysconfdir=/etc --with-pjproject-bundled"
 $PKGCONFIG 'jansson >= 2.11' || common_config_args+=" --with-jansson-bundled"
@@ -116,81 +133,104 @@ fi
 export WGET_EXTRA_ARGS="--quiet"
 
 if [ $NO_CONFIGURE -eq 0 ] ; then
-	runner ./configure ${common_config_args} > ${OUTPUT_DIR:+${OUTPUT_DIR}/}configure.txt
+	echo "::notice::Running configure"
+	begin_log "$OUTPUT_DIR/configure"
+	runner ./configure ${common_config_args} >>"${log_to}" 2>>"${err_to}" \
+		|| { echo "::error::Configure failed.  See ${err_to} for more details." ; exit 1 ; }
+	end_log
+ 
 fi
 
 if [ $NO_MENUSELECT -eq 0 ] ; then
-	runner ${MAKE} menuselect.makeopts
-
-	runner menuselect/menuselect `gen_mods enable DONT_OPTIMIZE BETTER_BACKTRACES` menuselect.makeopts
-	if [ $NO_DEV_MODE -eq 0 ] ; then
-		runner menuselect/menuselect `gen_mods enable MALLOC_DEBUG DO_CRASH TEST_FRAMEWORK` menuselect.makeopts
-	fi
-	runner menuselect/menuselect `gen_mods disable COMPILE_DOUBLE BUILD_NATIVE` menuselect.makeopts
-	if [ $REF_DEBUG -eq 1 ] ; then
-		runner menuselect/menuselect --enable REF_DEBUG menuselect.makeopts
-	fi
-
-	cat_enables=""
-
-	if [[ ! "${BRANCH_NAME}" =~ ^certified ]] ; then
-		cat_enables+=" MENUSELECT_BRIDGES MENUSELECT_CEL MENUSELECT_CDR"
-		cat_enables+=" MENUSELECT_CHANNELS MENUSELECT_CODECS MENUSELECT_FORMATS MENUSELECT_FUNCS"
-		cat_enables+=" MENUSELECT_PBX MENUSELECT_RES MENUSELECT_UTILS"
-	fi
-
-	if [ $NO_DEV_MODE -eq 0 ] ; then
-		cat_enables+=" MENUSELECT_TESTS"
-	fi
-	runner menuselect/menuselect `gen_cats enable $cat_enables` menuselect.makeopts
-
-	mod_disables="res_digium_phone"
-	if [ $TESTED_ONLY -eq 1 ] ; then
-		# These modules are not tested at all.  They are loaded but nothing is ever done
-		# with them, no testsuite tests depend on them.
-		mod_disables+=" app_adsiprog app_alarmreceiver app_celgenuserevent app_db app_dictate"
-		mod_disables+=" app_dumpchan app_externalivr app_festival app_getcpeid"
-		mod_disables+=" app_jack app_milliwatt app_minivm app_morsecode app_mp3 app_privacy"
-		mod_disables+=" app_readexten app_sms app_speech_utils app_test app_waitforring"
-		mod_disables+=" app_waitforsilence app_waituntil app_zapateller"
-		mod_disables+=" cdr_adaptive_odbc cdr_custom cdr_manager cdr_odbc cdr_pgsql cdr_radius"
-		mod_disables+=" cdr_tds"
-		mod_disables+=" cel_odbc cel_pgsql cel_radius cel_sqlite3_custom cel_tds"
-		mod_disables+=" chan_console chan_motif chan_rtp chan_unistim"
-		mod_disables+=" func_frame_trace func_pitchshift func_speex func_volume func_dialgroup"
-		mod_disables+=" func_periodic_hook func_sprintf func_enum func_extstate func_sysinfo func_iconv"
-		mod_disables+=" func_callcompletion func_version func_rand func_sha1 func_module func_md5"
-		mod_disables+=" pbx_dundi pbx_loopback"
-		mod_disables+=" res_ael_share res_calendar res_config_ldap res_config_pgsql res_corosync"
-		mod_disables+=" res_http_post res_rtp_multicast res_snmp res_xmpp"
-	fi
-
-	runner menuselect/menuselect `gen_mods disable $mod_disables` menuselect.makeopts
-
-	mod_enables="app_voicemail app_directory"
-	mod_enables+=" res_mwi_external res_ari_mailboxes res_mwi_external_ami res_stasis_mailbox"
-	mod_enables+=" CORE-SOUNDS-EN-GSM MOH-OPSOUND-GSM EXTRA-SOUNDS-EN-GSM"
-	runner menuselect/menuselect `gen_mods enable $mod_enables` menuselect.makeopts
+	echo "::notice::Running menuselect"
+	begin_log "$OUTPUT_DIR/menuselect"
+	(
+		runner ${MAKE} menuselect.makeopts
+	
+		runner menuselect/menuselect `gen_mods enable DONT_OPTIMIZE BETTER_BACKTRACES` menuselect.makeopts
+		if [ $NO_DEV_MODE -eq 0 ] ; then
+			runner menuselect/menuselect `gen_mods enable MALLOC_DEBUG DO_CRASH TEST_FRAMEWORK` menuselect.makeopts
+		fi
+		runner menuselect/menuselect `gen_mods disable COMPILE_DOUBLE BUILD_NATIVE` menuselect.makeopts
+		if [ $REF_DEBUG -eq 1 ] ; then
+			runner menuselect/menuselect --enable REF_DEBUG menuselect.makeopts
+		fi
+	
+		cat_enables=""
+	
+		if [[ ! "${BRANCH_NAME}" =~ ^certified ]] ; then
+			cat_enables+=" MENUSELECT_BRIDGES MENUSELECT_CEL MENUSELECT_CDR"
+			cat_enables+=" MENUSELECT_CHANNELS MENUSELECT_CODECS MENUSELECT_FORMATS MENUSELECT_FUNCS"
+			cat_enables+=" MENUSELECT_PBX MENUSELECT_RES MENUSELECT_UTILS"
+		fi
+	
+		if [ $NO_DEV_MODE -eq 0 ] ; then
+			cat_enables+=" MENUSELECT_TESTS"
+		fi
+		runner menuselect/menuselect `gen_cats enable $cat_enables` menuselect.makeopts
+	
+		mod_disables="codec_ilbc res_digium_phone"
+		if [ $TESTED_ONLY -eq 1 ] ; then
+			# These modules are not tested at all.  They are loaded but nothing is ever done
+			# with them, no testsuite tests depend on them.
+			mod_disables+=" app_adsiprog app_alarmreceiver app_celgenuserevent app_db app_dictate"
+			mod_disables+=" app_dumpchan app_externalivr app_festival app_getcpeid"
+			mod_disables+=" app_jack app_milliwatt app_minivm app_morsecode app_mp3 app_privacy"
+			mod_disables+=" app_readexten app_sms app_speech_utils app_test app_waitforring"
+			mod_disables+=" app_waitforsilence app_waituntil app_zapateller"
+			mod_disables+=" cdr_adaptive_odbc cdr_custom cdr_manager cdr_odbc cdr_pgsql cdr_radius"
+			mod_disables+=" cdr_tds"
+			mod_disables+=" cel_odbc cel_pgsql cel_radius cel_sqlite3_custom cel_tds"
+			mod_disables+=" chan_console chan_motif chan_rtp chan_unistim"
+			mod_disables+=" func_frame_trace func_pitchshift func_speex func_volume func_dialgroup"
+			mod_disables+=" func_periodic_hook func_sprintf func_enum func_extstate func_sysinfo func_iconv"
+			mod_disables+=" func_callcompletion func_version func_rand func_sha1 func_module func_md5"
+			mod_disables+=" pbx_dundi pbx_loopback"
+			mod_disables+=" res_ael_share res_calendar res_config_ldap res_config_pgsql res_corosync"
+			mod_disables+=" res_http_post res_rtp_multicast res_snmp res_xmpp"
+		fi
+		mod_disables+=" $MODULES_BLACKLIST"
+	
+		runner menuselect/menuselect `gen_mods disable $mod_disables` menuselect.makeopts
+	
+		mod_enables="app_voicemail app_directory"
+		mod_enables+=" res_mwi_external res_ari_mailboxes res_mwi_external_ami res_stasis_mailbox"
+		mod_enables+=" CORE-SOUNDS-EN-GSM MOH-OPSOUND-GSM EXTRA-SOUNDS-EN-GSM"
+		runner menuselect/menuselect `gen_mods enable $mod_enables` menuselect.makeopts
+	) >>"${log_to}" 2>>"${err_to}" || { echo "::notice::Menuselect failed.  See ${err_to} for details." ; exit 1 ; }
+	end_log
 fi
 
 if [ $NO_MAKE -eq 0 ] ; then
-runner ${MAKE} -j8 full || runner ${MAKE} -j1 NOISY_BUILD=yes full
+	echo "::notice::Building"
+	begin_log ${OUTPUT_DIR}/build
+	(
+		runner ${MAKE} -j8 full || runner ${MAKE} -j1 NOISY_BUILD=yes full
+			
+	) >>"${log_to}" 2>>"${err_to}" || { echo "::error::Building failed.  See ${err_to} for more details." ; exit 1 ; } 
+	end_log
 fi
 
-runner rm -f ${LCOV_DIR}/*.info
+runner rm -f ${LCOV_DIR}/*.info 2>/dev/null || :
+
 if [ $COVERAGE -eq 1 ] ; then
-	runner mkdir -p ${LCOV_DIR}
-
-	# Zero counter data
-	runner lcov --quiet --directory . --zerocounters
-
-	# Branch coverage is not supported by --initial.  Disable to suppresses a notice
-	# printed if it was enabled in lcovrc.
-	# This initial capture ensures any module which was built but never loaded is
-	# reported with 0% coverage for all sources.
-	runner lcov --quiet --directory . --no-external --capture --initial --rc lcov_branch_coverage=0 \
-		--output-file ${LCOV_DIR}/initial.info
+	echo "::notice::Running lcov"
+	begin_log "${OUTPUT_DIR}/lcov"
+	(
+		runner mkdir -p ${LCOV_DIR}
+	
+		# Zero counter data
+		runner lcov --quiet --directory . --zerocounters
+	
+		# Branch coverage is not supported by --initial.  Disable to suppresses a notice
+		# printed if it was enabled in lcovrc.
+		# This initial capture ensures any module which was built but never loaded is
+		# reported with 0% coverage for all sources.
+		runner lcov --quiet --directory . --no-external --capture --initial --rc lcov_branch_coverage=0 \
+			--output-file ${LCOV_DIR}/initial.info
+	) >>"${log_to}" 2>>"${err_to}" || { echo "::error::LCOV failed.  See ${err_to} for more details." ; exit 1 ; }
 fi
+end_log
 
 if [ $NO_ALEMBIC -eq 0 ] ; then
 	ALEMBIC=$(which alembic 2>/dev/null || : )
@@ -199,35 +239,55 @@ if [ $NO_ALEMBIC -eq 0 ] ; then
 		exit 1
 	fi
 
+	echo "::notice::Running alembic"
 	find contrib/ast-db-manage -name *.pyc -delete
-	out=$(run_alembic -c config.ini.sample branches)
-	if [ "x$out" != "x" ] ; then
-		>&2 echo "Alembic branches were found for config"
-		>&2 echo $out
-		exit 1
-	fi
-	run_alembic -c config.ini.sample upgrade head --sql > "${OUTPUT_DIR:+${OUTPUT_DIR}/}alembic-config.sql" || exit 1
-	echo "Alembic for 'config' OK"
-
-	out=$(run_alembic -c cdr.ini.sample branches)
-	if [ "x$out" != "x" ] ; then
-		>&2 echo "Alembic branches were found for cdr"
-		>&2 echo $out
-		exit 1
-	fi
-	run_alembic -c cdr.ini.sample upgrade head --sql > "${OUTPUT_DIR:+${OUTPUT_DIR}/}alembic-cdr.sql" || exit 1
-	echo "Alembic for 'cdr' OK"
-
-	out=$(run_alembic -c voicemail.ini.sample branches)
-	if [ "x$out" != "x" ] ; then
-		>&2 echo "Alembic branches were found for voicemail"
-		>&2 echo $out
-		exit 1
-	fi
-	run_alembic -c voicemail.ini.sample upgrade head --sql > "${OUTPUT_DIR:+${OUTPUT_DIR}/}alembic-voicemail.sql" || exit 1
-	echo "Alembic for 'voicemail' OK"
+	begin_log "${OUTPUT_DIR}alembic"
+	(
+		out=$(run_alembic -c config.ini.sample branches)
+		if [ "x$out" != "x" ] ; then
+			echo "Alembic branches were found for config" >>${err_to}
+			echo $out >>${err_to}
+			exit 1
+		fi
+		
+		run_alembic -c config.ini.sample upgrade head --sql \
+			> "${OUTPUT_DIR}alembic-config.sql" \
+			2>"$err_to" || exit 1
+		echo "Alembic for 'config' OK"
+		
+		out=$(run_alembic -c cdr.ini.sample branches)
+		if [ "x$out" != "x" ] ; then
+			echo "Alembic branches were found for cdr" >>${err_to}
+			echo $out >>${err_to}
+			exit 1
+		fi
+	
+		run_alembic -c cdr.ini.sample upgrade head --sql \
+			> "${OUTPUT_DIR}alembic-cdr.sql" \
+			2>"$err_to" || exit 1
+		echo "Alembic for 'cdr' OK"
+	
+		
+		out=$(run_alembic -c voicemail.ini.sample branches)
+		if [ "x$out" != "x" ] ; then
+			echo "Alembic branches were found for voicemail" >>${err_to}
+			echo $out >>${err_to}
+			exit 1
+		fi
+	
+		run_alembic -c voicemail.ini.sample upgrade head --sql \
+			> "${OUTPUT_DIR}alembic-voicemail.sql" \
+			2>"$err_to" || exit 1
+		echo "Alembic for 'voicemail' OK"
+	) >>${log_to} 2>>${err_to} || {	echo "::error::Alembic failed.  See ${err_to} for more details" ; exit 1 ; }
+	end_log
 fi
 
 if [ -f "doc/core-en_US.xml" ] ; then
-	runner ${MAKE} validate-docs || ${MAKE} NOISY_BUILD=yes validate-docs
+	echo "::notice::Validating documentation"
+	begin_log "${OUTPUT_DIR}validate_docs"
+	(
+		runner ${MAKE} validate-docs || ${MAKE} NOISY_BUILD=yes validate-docs
+	)  >>${log_to} 2>>${err_to} || {	echo "::error::Document validation failed.  See ${err_to} for more details" ; exit 1 ; }
+	end_log
 fi

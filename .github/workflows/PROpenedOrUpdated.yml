@@ -1,0 +1,142 @@
+name: PROpenedOrUpdated
+run-name: "PR ${{github.event.number}} ${{github.event.action}} by ${{ github.actor }}"
+on:
+#  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+env:
+  CACHE_KEY:         PR:${{github.event.number}}-RUN:${{github.run_number}}-RID:${{github.run_id}}
+  ASTERISK_REPO:     ${{github.repository}}
+  PR_NUMBER:         ${{github.event.number}}
+  PR_COMMIT:         ${{github.event.pull_request.head.sha}}
+  BRANCH:            ${{github.event.pull_request.base.ref}}
+  GITHUB_TOKEN:      ${{secrets.GITHUB_TOKEN}}
+  MODULES_BLACKLIST: ${{vars.GATETEST_MODULES_BLACKLIST}} ${{vars.UNITTEST_MODULES_BLACKLIST}}
+
+jobs:
+  AsteriskBuilds:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: GetAsterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          to-cache-key:      ${{env.CACHE_KEY}}
+          asterisk-repo:     ${{env.ASTERISK_REPO}}
+          pr-number:         ${{env.PR_NUMBER}}
+          base-branch:       ${{env.BRANCH}}
+          github-token:      ${{secrets.GITHUB_TOKEN}}
+          modules-blacklist: ${{env.MODULES_BLACKLIST}}
+
+  AsteriskUnitTests:
+    runs-on: ubuntu-latest
+    needs: AsteriskBuilds
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Install Asterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key:   ${{env.CACHE_KEY}}
+          asterisk-repo:    ${{env.ASTERISK_REPO}}
+          base-branch:      ${{env.BRANCH}}
+
+      - name: Run Unit Tests
+        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+        with:
+          asterisk-repo:    ${{env.ASTERISK_REPO}}
+          pr-number:        ${{env.PR_NUMBER}}
+          base-branch:      ${{env.BRANCH}}
+          github-token:     ${{secrets.GITHUB_TOKEN}}
+          unittest-command: ${{vars.UNITTEST_COMMAND}}
+
+      - name: Get Token needed to add reviewers
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{secrets.ASTERISK_ORG_ACCESS_APP_ID}}
+          application_private_key: ${{secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY}}
+          organization: asterisk
+
+      - name: Add Reviewers
+        if: ${{ success() }}
+        env:
+          GITHUB_TOKEN: ${{steps.get_workflow_token.outputs.token}}
+          GH_TOKEN: ${{steps.get_workflow_token.outputs.token}}
+          REVIEWERS: ${{vars.PR_REVIEWERS}}
+        run: |
+          echo "${{env.GITHUB_ACTION}} Add reviewers"
+          IFS=$'; \n'
+          for r in $REVIEWERS ; do
+            gh pr edit --repo ${ASTERISK_REPO} ${PR_NUMBER} --add-reviewer $r
+          done
+
+  AsteriskGateTestMatrix:
+    needs: AsteriskUnitTests
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(vars.GATETEST_LIST) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Install Asterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key: ${{env.CACHE_KEY}}
+          asterisk-repo:  ${{env.ASTERISK_REPO}}
+          base-branch:    ${{env.BRANCH}}
+    
+      - name: Run Gate Tests for group ${{ matrix.group }}
+        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+        with:
+          asterisk-repo:     ${{env.ASTERISK_REPO}}
+          pr-number:         ${{env.PR_NUMBER}}
+          pr-commit:         ${{env.PR_COMMIT}}
+          base-branch:       ${{env.BRANCH}}
+          github-token:      ${{secrets.GITHUB_TOKEN}}
+          testsuite-repo:    ${{vars.TESTSUITE_REPO}}
+          gatetest-group:    ${{matrix.group}}
+          gatetest-commands: ${{vars.GATETEST_COMMANDS}} 
+
+  AsteriskGateTests:
+    name: AsteriskGateTests
+#    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: AsteriskGateTestMatrix
+    steps:
+      - name: Check test matrix status
+        env:
+          RESULT: ${{ needs.AsteriskGateTestMatrix.result }}
+        run: |
+          case $RESULT in
+            success)
+              echo "::notice::All Testsuite tests passed"
+              exit 0
+              ;;
+            skipped)
+              echo "::notice::No Testsuite tests were required"
+              exit 0
+              ;;
+              *)
+              echo "::error::One or more Testsuite tests failed" 
+              exit 1
+          esac
+
+  DeleteCache:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: AsteriskGateTests
+    steps:
+      - name: DeleteCache
+        uses: snnaplab/delete-branch-cache-action@v1
+        with:
+          ref: refs/heads/master
+          key: ${{env.CACHE_KEY}}
