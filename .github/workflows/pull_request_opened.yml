@@ -1,0 +1,20 @@
+name: Asterisk Unit Tests
+run-name: ${{ github.actor }} has submitted a pull request
+on:
+  pull_request:
+    types: [opened, reopened]
+  
+
+jobs:
+  CheckForIssue:
+    runs-on: ubuntu-latest
+    steps:
+      - name:
+        run: |
+          echo "::group::github_trigger_event"
+          echo '${{ toJSON(github.event) }}' > asterisk/event.json
+          echo "::endgroup::"
+          echo "::group::env"
+          echo '${{ toJSON(env) }}' > asterisk/env.json
+          echo "::endgroup::"
+

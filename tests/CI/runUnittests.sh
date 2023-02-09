@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 NO_EXPECT=0
 source $CIDIR/ci.functions
 ASTETCDIR=$DESTDIR/etc/asterisk
@@ -16,6 +17,8 @@ asterisk_corefile_glob() {
 }
 
 run_tests_expect() {
+[ $GITHUB -eq 1 ] && echo "::group::run_tests"
+
 $EXPECT <<-EOF
 	spawn sudo $ASTERISK ${USER_GROUP:+-U ${USER_GROUP%%:*} -G ${USER_GROUP##*:}} -fcng -C $CONFFILE
 	match_max 512
@@ -34,9 +37,11 @@ $EXPECT <<-EOF
 	expect -notransfer "Executing last minute cleanups"
 	wait
 EOF
+[ $GITHUB -eq 1 ] && echo "::endgroup::"
 }
 
 run_tests_socket() {
+	[ $GITHUB -eq 1 ] && echo "::group::run_tests"
 	sudo $ASTERISK ${USER_GROUP:+-U ${USER_GROUP%%:*} -G ${USER_GROUP##*:}} -gn -C $CONFFILE
 	for n in {1..5} ; do
 		sleep 3
@@ -48,6 +53,7 @@ run_tests_socket() {
 	$ASTERISK -rx "test show results failed" -C $CONFFILE
 	$ASTERISK -rx "test generate results xml $OUTPUTFILE" -C $CONFFILE
 	$ASTERISK -rx "core stop now" -C $CONFFILE
+	[ $GITHUB -eq 1 ] && echo "::endgroup::"
 }
 
 # If DESTDIR is used to install and run asterisk from non standard locations,

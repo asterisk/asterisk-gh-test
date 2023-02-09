@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CIDIR=$(dirname $(readlink -fn $0))
+GITHUB=0
 UNINSTALL=0
 UNINSTALL_ALL=0
 source $CIDIR/ci.functions
