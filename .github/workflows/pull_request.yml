@@ -1,0 +1,132 @@
+name: Process Pull Request
+run-name: ${{ github.actor }} is doing a pull
+on:
+#  workflow_dispatch:
+  issue_comment
+#  pull_request:
+#    types: [opened, reopened]
+
+#permissions:
+#  actions: read
+#  checks: write
+#  contents: read
+#  deployments: read
+#  issues: read
+#  pull-requests: write
+#  statuses: write
+
+jobs:
+  UnitTests:
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
+      volumes:
+        - /srv/cache/unittests:/usr/src/asterisk/asterisk-gh-test/asterisk
+
+    steps:
+      - name: Precheck
+        run: |
+          echo A comment on PR $NUMBER
+          echo ${{ toJSON(github.event) }}
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+    
+      - name: Setup for local ACT
+        if: ${{ env.ACT }}
+        run: |
+          if [ -z "${ASTERISK_CI_URL}" ] || [ -z "${ASTERISK_URL}" ] ; then
+            echo "::error::ASTERISK_CI_URL and ASTERISK_URL must be set in the environment"
+            exit 1
+          fi
+          echo "::notice::Setting ASTERISK_CI_URL and ASTERISK_URL from environment"
+          echo "PWD: $PWD"
+          mount
+
+#      - name: Checkout Asterisk (local testing)
+#        if: env.ACT && env.ASTERISK_URL != ''
+#        run: |
+#          git config --global --add safe.directory ${PWD}/asterisk
+#          #rm -rf ./asterisk &>/dev/null || :
+#          rsync -aH ${ASTERISK_URL}/. ./asterisk/
+
+        # If running in production, we'll use the normal checkout
+        # action to get the repo.
+      - name: Checkout Asterisk
+#        if: ${{ !env.ACT }}
+        uses: actions/checkout@v3
+        with:
+          path: 'asterisk'
+          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
+          # Default: true
+          clean: true
+          fetch-depth: 1
+          # Add repository path as safe.directory for Git global config by running `git
+          # config --global --add safe.directory <path>`
+          # Default: true
+          set-safe-directory: true
+
+      - name: Setup Asterisk Build Environment
+        run: |
+          cd asterisk
+          echo "PWD: $PWD"
+          mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
+          chown -R asteriskci:users /srv/cache
+          chmod g+rw /srv/cache/ccache
+          chmod g+s /srv/cache/ccache
+          mkdir -p tests/CI/output || :
+          chown -R asteriskci:users tests/CI/output
+        
+      - name: Build Asterisk
+        run: |
+          cd asterisk
+          echo "PWD: $PWD"
+          if [ -f ./tests/CI/output/is-built ] ; then
+            echo "Asterisk is already built"
+            exit 0
+          fi
+          ./tests/CI/buildAsterisk.sh --branch-name=master --output-dir=./tests/CI/output
+          touch ./tests/CI/output/is-built
+
+      - name: Install Asterisk
+        if: ${{ success() }}
+        run: |
+          cd asterisk
+          echo "PWD: $PWD"
+          if [ -f ./tests/CI/output/is-installed ] ; then
+            echo "Asterisk is already installed"
+            exit 0
+          fi
+          ./tests/CI/installAsterisk.sh --uninstall-all --branch-name=master --user-group=asteriskci:users 
+          touch ./tests/CI/output/is-installed
+
+      - name: Run Unit Tests
+        if: ${{ success() }}
+        run: |
+          cd asterisk
+          echo "PWD: $PWD"
+          tests/CI/runUnittests.sh --user-group=asteriskci:users \
+            --output-dir=./tests/CI/output \
+            --output-xml=./tests/CI/output/unittests-results.xml \
+            --unittest-command="test execute categoty /main/json"
+
+      - name: Save Output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: "Unit Uest Results"
+          path: asterisk/tests/CI/output
+
+      - name: Test Report
+#        if: false
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Asterisk Unit Tests
+          working-directory: asterisk
+          path: ./tests/CI/output/unittests-results.xml
+          reporter: java-junit
+          token: ${{ secrets.GITHUB_TOKEN }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_APP_TOKEN }}
+          
