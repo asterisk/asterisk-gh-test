@@ -2,7 +2,7 @@ name: Process Pull Request
 run-name: ${{ github.actor }} is doing a pull
 on:
 #  workflow_dispatch:
-  pull_requests:
+  pull_request:
     types: [opened, reopened]
 
 jobs:
@@ -12,7 +12,6 @@ jobs:
       checks: write
       contents: read
       deployments: read
-      id-token: read
       issues: read
       pull-requests: write
       statuses: write
