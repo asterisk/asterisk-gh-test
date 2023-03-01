@@ -4,9 +4,18 @@ on:
 #  workflow_dispatch:
   pull_requests:
     types: [opened, reopened]
-    
+
 jobs:
   UnitTests:
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+      deployments: read
+      id-token: read
+      issues: read
+      pull-requests: write
+      statuses: write
     runs-on: ubuntu-latest
     container:
       image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
@@ -105,7 +114,7 @@ jobs:
           working-directory: asterisk
           path: ./tests/CI/output/unittests-results.xml
           reporter: java-junit
-#          token: ${{ secrets.GITHUB_APP_TOKEN }}
+#          token: ${{ secrets.GITHUB_TOKEN }}
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_APP_TOKEN }}
           
