@@ -49,7 +49,17 @@ run_tests_socket() {
 	done
 	sleep 1
 	$ASTERISK -rx "core show settings" -C $CONFFILE
-	$ASTERISK -rx "${UNITTEST_COMMAND:-test execute all}" -C $CONFFILE
+
+	if [ x"${UNITTEST_COMMAND}" != x ] ; then
+		IFS=';'
+		for test in ${UNITTEST_COMMAND} ; do
+			$ASTERISK -rx "$test" -C $CONFFILE
+		done
+		unset IFS
+	else
+		$ASTERISK -rx "test execute all" -C $CONFFILE
+	fi
+
 	$ASTERISK -rx "test show results failed" -C $CONFFILE
 	$ASTERISK -rx "test generate results xml $OUTPUTFILE" -C $CONFFILE
 	$ASTERISK -rx "core stop now" -C $CONFFILE
