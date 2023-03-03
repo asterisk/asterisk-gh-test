@@ -1,11 +1,14 @@
 name: Test Results
 
 on:
-  workflow_run:
-    workflows: ["Asterisk Unit Tests", "Asterisk Gate Tests"]
-    types:
-      - completed
-permissions: {}
+  pull_request:
+    types: [opened, reopened]
+#  workflow_run:
+#        workflows: ["Asterisk Unit Tests", "Asterisk Gate Tests"]
+#    types:
+#      - completed
+
+#permissions: {}
 
 jobs:
   test-results:

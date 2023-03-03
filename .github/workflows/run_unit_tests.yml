@@ -10,17 +10,6 @@ jobs:
       image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
 
     steps:
-      - name: Setup for local ACT
-        if: ${{ env.ACT }}
-        run: |
-          if [ -z "${ASTERISK_CI_URL}" ] || [ -z "${ASTERISK_URL}" ] ; then
-            echo "::error::ASTERISK_CI_URL and ASTERISK_URL must be set in the environment"
-            exit 1
-          fi
-          echo "::notice::Setting ASTERISK_CI_URL and ASTERISK_URL from environment"
-          echo "PWD: $PWD"
-          mount
-
       - name: Checkout Asterisk
 #        if: ${{ !env.ACT }}
         uses: actions/checkout@v3
@@ -38,7 +27,8 @@ jobs:
       - name: Setup Asterisk Build Environment
         run: |
           cd asterisk
-          echo "PWD: $PWD"
+          echo "::notice::PWD: $PWD"
+          echo "::notice::$(git log -5 --format="%h %an %ai %s" HEAD~1 | cat)"
           mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
           chown -R asteriskci:users /srv/cache
           chmod g+rw /srv/cache/ccache
@@ -49,7 +39,6 @@ jobs:
       - name: Build Asterisk
         run: |
           cd asterisk
-          echo "PWD: $PWD"
           if [ -f ./tests/CI/output/is-built ] ; then
             echo "Asterisk is already built"
             exit 0
@@ -61,7 +50,6 @@ jobs:
         if: ${{ success() }}
         run: |
           cd asterisk
-          echo "PWD: $PWD"
           if [ -f ./tests/CI/output/is-installed ] ; then
             echo "Asterisk is already installed"
             exit 0
@@ -71,13 +59,16 @@ jobs:
 
       - name: Run Unit Tests
         if: ${{ success() }}
+        env:
+          UNITTEST_COMMAND: ${{ vars.UNITTEST_COMMAND }}
         run: |
           cd asterisk
           echo "PWD: $PWD"
           tests/CI/runUnittests.sh --no-expect --github \
             --user-group=asteriskci:users \
             --output-dir=./tests/CI/output \
-            --output-xml=./tests/CI/output/unittests-results.xml
+            --output-xml=./tests/CI/output/unittests-results.xml \
+            --unittest-command='$UNITTEST_COMMAND'
 
       - name: Save Output
         if: ${{ always() }}
