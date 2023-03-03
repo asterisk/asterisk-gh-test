@@ -7,15 +7,6 @@
 ===
 === Information for upgrading between Asterisk versions
 ===
-=== This file documents all the changes that MUST be taken
-=== into account when upgrading between certain Asterisk
-=== versions. These changes may require that you modify
-=== your configuration files, dialplan or (in some cases)
-=== source code if you have your own Asterisk modules or
-=== patches. This file also includes advance notice of any
-=== functionality that has been marked as 'deprecated' and
-=== may be removed in a future release, along with the
-=== suggested replacement functionality.
 ===
 ===========================================================
 
