@@ -30,7 +30,7 @@ jobs:
         run: |
           cd asterisk
           echo "::notice::PWD: $PWD"
-          echo "::notice::$(git log -5 --format="%h %an %ai %s" HEAD~1 | cat)"
+          echo "::notice::$(git log -5 --format='%h %an %ai %s')"
           mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
           chown -R asteriskci:users /srv/cache
           chmod g+rw /srv/cache/ccache
@@ -65,12 +65,12 @@ jobs:
           UNITTEST_COMMAND: ${{ vars.UNITTEST_COMMAND }}
         run: |
           cd asterisk
-          echo "PWD: $PWD"
+          echo "::notice::Running unit test command $UNITTEST_COMMAND"
           tests/CI/runUnittests.sh --no-expect --github \
             --user-group=asteriskci:users \
             --output-dir=./tests/CI/output \
             --output-xml=./tests/CI/output/unittests-results.xml \
-            --unittest-command='$UNITTEST_COMMAND'
+            --unittest-command="$UNITTEST_COMMAND"
 
       - name: Save Output
         if: ${{ always() }}
