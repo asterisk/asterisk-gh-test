@@ -45,9 +45,6 @@ jobs:
           chmod g+s /srv/cache/ccache
           mkdir -p tests/CI/output || :
           chown -R asteriskci:users tests/CI/output
-          echo "::group::github_trigger_event"
-          echo '${{ toJSON(github.event) }}' > tests/CI/output/event.json
-          echo "::endgroup::"
 
       - name: Build Asterisk
         run: |
