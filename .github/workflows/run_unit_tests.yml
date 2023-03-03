@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [opened, reopened]
 env:
-  UNITTEST_COMMAND: ${{ vars.UNITTEST_COMMAND }}
+  UNITTEST_COMMAND: "test execute category /main/json/"
 
 jobs:
   AsteriskUnitTests:
