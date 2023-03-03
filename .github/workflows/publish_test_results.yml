@@ -2,7 +2,7 @@ name: Test Results
 
 on:
   workflow_run:
-    workflows: ["Process Pull Request"]
+    workflows: ["Asterisk Unit Tests", "Asterisk Gate Tests"]
     types:
       - completed
 permissions: {}
