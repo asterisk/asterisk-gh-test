@@ -19,6 +19,8 @@ jobs:
           if [ -z "$UNITTEST_COMMAND" ] ; then
             echo "::error::UNITTEST_COMMAND is not defined"
             exit 1
+          else
+            echo "::notice::UNITTEST_COMMAND: $UNITTEST_COMMAND"
           fi
 
       - name: Checkout Asterisk
@@ -70,8 +72,6 @@ jobs:
 
       - name: Run Unit Tests
         if: ${{ success() }}
-        env:
-          UNITTEST_COMMAND: ${{ vars.UNITTEST_COMMAND }}
         run: |
           cd asterisk
           echo "::notice::Running unit test command $UNITTEST_COMMAND"
