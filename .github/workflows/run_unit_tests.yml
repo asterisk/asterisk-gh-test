@@ -4,6 +4,8 @@ on:
 #  workflow_call:
   pull_request:
     types: [opened, reopened]
+env:
+  UNITTEST_COMMAND: ${{ vars.UNITTEST_COMMAND }}
 
 jobs:
   AsteriskUnitTests:
@@ -12,6 +14,13 @@ jobs:
       image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
 
     steps:
+      - name: PreCheck
+        run: |
+          if [ -z "$UNITTEST_COMMAND" ] ; then
+            echo "::error::UNITTEST_COMMAND is not defined"
+            exit 1
+          fi
+
       - name: Checkout Asterisk
 #        if: ${{ !env.ACT }}
         uses: actions/checkout@v3
