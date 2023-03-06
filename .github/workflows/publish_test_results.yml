@@ -22,6 +22,17 @@ jobs:
       actions: read
 
     steps:
+      - name: Do Something Really Malicious
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          set -e +v +x
+          echo "::error::HELP!!!!"
+          echo "::group::github_event"
+          echo '${{ github.event }}'
+          echo "::endgroup::"
+          exit 99
+
       - name: Download and Extract Artifacts
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
