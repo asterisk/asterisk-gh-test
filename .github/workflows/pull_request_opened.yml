@@ -15,6 +15,20 @@ jobs:
         run: |
           sudo apt-get install jq -y
 
+      - name: Checkout Asterisk
+#        if: ${{ !env.ACT }}
+        uses: actions/checkout@v3
+        with:
+          path: 'asterisk-gh-test'
+          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
+          # Default: true
+          clean: true
+          fetch-depth: 1
+          # Add repository path as safe.directory for Git global config by running `git
+          # config --global --add safe.directory <path>`
+          # Default: true
+          set-safe-directory: true
+
       - name: Check for labels
         uses: ./.github/actions/check_pr_for_labels
         with:
