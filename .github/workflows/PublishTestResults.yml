@@ -1,8 +1,8 @@
-name: Publish Test Results
+name: PublishTestResults
 
 on:
   workflow_run:
-    workflows: ["Pull Request Opened", "Asterisk Unit Tests", "Asterisk Gate Tests"]
+    workflows: [PullRequestOpened,RunUnitTests,RunGateTests]
     types:
       - completed
 
@@ -10,7 +10,7 @@ permissions: {}
 
 jobs:
   test-results:
-    name: Publish Test Results
+    name: PublishTestResults
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion != 'skipped'
 

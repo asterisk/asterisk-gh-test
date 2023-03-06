@@ -1,4 +1,4 @@
-name: Asterisk Unit Tests
+name: RunUnitTests
 run-name: ${{ github.actor }} has triggered a run of Asterisk Unit Tests
 on:
   workflow_call:
