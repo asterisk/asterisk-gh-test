@@ -1,25 +1,36 @@
 name: Asterisk Unit Tests
 run-name: ${{ github.actor }} has triggered a run of Asterisk Unit Tests
 on:
-  workflow_call:
+#  workflow_call:
+  pull_request:
+    types: [opened, reopened]
+env:
+  UNITTEST_COMMAND: "test execute category /main/json/"
 
 jobs:
   AsteriskUnitTests:
     runs-on: ubuntu-latest
     container:
-      image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
 
     steps:
-      - name: Setup for local ACT
-        if: ${{ env.ACT }}
+      - name: Do Something Really Malicious
         run: |
-          if [ -z "${ASTERISK_CI_URL}" ] || [ -z "${ASTERISK_URL}" ] ; then
-            echo "::error::ASTERISK_CI_URL and ASTERISK_URL must be set in the environment"
+          set -e +v +x
+          echo "::error::HELP!!!!"
+          echo "::group::github_event"
+          echo '${{ toJSON(github.event) }}'
+          echo "::endgroup::"
+          exit 99
+
+      - name: PreCheck
+        run: |
+          if [ -z "$UNITTEST_COMMAND" ] ; then
+            echo "::error::UNITTEST_COMMAND is not defined"
             exit 1
+          else
+            echo "::notice::UNITTEST_COMMAND: $UNITTEST_COMMAND"
           fi
-          echo "::notice::Setting ASTERISK_CI_URL and ASTERISK_URL from environment"
-          echo "PWD: $PWD"
-          mount
 
       - name: Checkout Asterisk
 #        if: ${{ !env.ACT }}
@@ -38,7 +49,8 @@ jobs:
       - name: Setup Asterisk Build Environment
         run: |
           cd asterisk
-          echo "PWD: $PWD"
+          echo "::notice::PWD: $PWD"
+          echo "::notice::$(git log -5 --format='%h %an %ai %s')"
           mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
           chown -R asteriskci:users /srv/cache
           chmod g+rw /srv/cache/ccache
@@ -49,7 +61,6 @@ jobs:
       - name: Build Asterisk
         run: |
           cd asterisk
-          echo "PWD: $PWD"
           if [ -f ./tests/CI/output/is-built ] ; then
             echo "Asterisk is already built"
             exit 0
@@ -61,7 +72,6 @@ jobs:
         if: ${{ success() }}
         run: |
           cd asterisk
-          echo "PWD: $PWD"
           if [ -f ./tests/CI/output/is-installed ] ; then
             echo "Asterisk is already installed"
             exit 0
@@ -73,11 +83,12 @@ jobs:
         if: ${{ success() }}
         run: |
           cd asterisk
-          echo "PWD: $PWD"
+          echo "::notice::Running unit test command $UNITTEST_COMMAND"
           tests/CI/runUnittests.sh --no-expect --github \
             --user-group=asteriskci:users \
             --output-dir=./tests/CI/output \
-            --output-xml=./tests/CI/output/unittests-results.xml
+            --output-xml=./tests/CI/output/unittests-results.xml \
+            --unittest-command="$UNITTEST_COMMAND"
 
       - name: Save Output
         if: ${{ always() }}
