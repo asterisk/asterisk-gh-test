@@ -18,10 +18,7 @@ jobs:
       - name: Check for labels
         uses: ./.github/actions/check_pr_for_labels
         with:
-          required_labels: 
-            - "(bug|enhancement|documentation)"
-            - "cherry-pick-.*"
-
+          required_labels: "(bug|enhancement|documentation),cherry-pick-.*"
 #      - name: Check for issue
 #        env:
 #          BODY: ${{ toJSON(github.event.pull_request.body) }}
