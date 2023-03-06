@@ -11,39 +11,16 @@ jobs:
   AsteriskUnitTests:
     runs-on: ubuntu-latest
     container:
-      image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
 
     steps:
-      - name: Do Something Really Malicious
-        run: |
-          set -e +v +x
-          echo "::error::HELP!!!!"
-          echo "::group::github_event"
-          echo '${{ github }}'
-          echo "::endgroup::"
-          exit 99
-
-      - name: PreCheck
-        run: |
-          if [ -z "$UNITTEST_COMMAND" ] ; then
-            echo "::error::UNITTEST_COMMAND is not defined"
-            exit 1
-          else
-            echo "::notice::UNITTEST_COMMAND: $UNITTEST_COMMAND"
-          fi
 
       - name: Checkout Asterisk
-#        if: ${{ !env.ACT }}
         uses: actions/checkout@v3
         with:
           path: 'asterisk'
-          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
-          # Default: true
           clean: true
           fetch-depth: 1
-          # Add repository path as safe.directory for Git global config by running `git
-          # config --global --add safe.directory <path>`
-          # Default: true
           set-safe-directory: true
 
       - name: Setup Asterisk Build Environment
@@ -97,6 +74,9 @@ jobs:
           name: Test Results
           path: asterisk/tests/CI/output
 
+      # We need to save the event payload to the artifacts so
+      # the publish test results workflow knows which PR to put the
+      # results
       - name: Save Event Payload
         uses: actions/upload-artifact@v3
         with:

@@ -3,13 +3,11 @@ run-name: ${{ github.actor }} has submitted a pull request
 on:
 #  workflow_dispatch:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
 jobs:
   SimpleChecks:
     runs-on: ubuntu-latest
-#    container:
-#      image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
     steps:
       - name: Install needed progs
         run: |
@@ -19,14 +17,8 @@ jobs:
 #        if: ${{ !env.ACT }}
         uses: actions/checkout@v3
         with:
-          path: 'asterisk-gh-test'
-          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
-          # Default: true
           clean: true
           fetch-depth: 1
-          # Add repository path as safe.directory for Git global config by running `git
-          # config --global --add safe.directory <path>`
-          # Default: true
           set-safe-directory: true
 
       - name: Check for labels
@@ -50,6 +42,6 @@ jobs:
 #          fi
 #          exit $rc
 #
-#  UnitTests:
-#    needs: SimpleChecks
-#    uses: ./.github/workflows/run_unit_tests.yml
+  UnitTests:
+    needs: SimpleChecks
+    uses: ./.github/workflows/run_unit_tests.yml

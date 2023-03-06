@@ -8,24 +8,30 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Checking PR for Labels ${{input.required_labels}}"
+    - name: "Checking PR for Labels ${{inputs.required_labels}}"
       env:
-        REQUIRED_LABELS: ${{input.required_labels}}
+        REQUIRED_LABELS: ${{inputs.required_labels}}
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
       run: |
-        ID=$(jq '.pull_request.name' $GITHUB_EVENT_PATH)
-        LABELS=$( gh api /repos/asterisk/asterisk-gh-test/pulls/${PR} --jq '.labels[].name')
+        set -e +v +x
+        echo "event path: $GITHUB_EVENT_PATH"
+        PR=$(jq '.number' $GITHUB_EVENT_PATH)
+        echo "::notice::Checking Pull Request $PR"
         echo "::notice::Labels required: $REQUIRED_LABELS"
+        LABELS=$( gh api /repos/asterisk/asterisk-gh-test/pulls/${PR} --jq '.labels[].name')
         echo "::notice::Labels on PR: $LABELS"
         rc=0
         IFS=$','
         for rl in $REQUIRED_LABELS ; do
           has_it=0
           for l in $LABELS ; do
-            [[ $l =~ $rl ]] && has_type+=1
+            [[ $l =~ $rl ]] && has_it+=1
           done
-          if [ $has_type -eq 0 ] ; then
-            echo "::error::At least 1 label must batch '$rl'"
-            rc = 1
+          if [ $has_it -eq 0 ] ; then
+            echo "::error::At least 1 label must match '$rl'"
+            rc=1
+          fi
         done
         if [ $rc -eq 0 ] ; then
           echo "::notice::The PR has good labels"
