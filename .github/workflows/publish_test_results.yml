@@ -2,7 +2,7 @@ name: Publish Test Results
 
 on:
   workflow_run:
-    workflows: ["Asterisk Unit Tests", "Asterisk Gate Tests"]
+    workflows: ["Pull Request Opened", "Asterisk Unit Tests", "Asterisk Gate Tests"]
     types:
       - completed
 
