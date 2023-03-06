@@ -1,4 +1,4 @@
-name: Pull Request Opened
+name: PullRequestOpenedOrUpdated
 run-name: ${{ github.actor }} has submitted a pull request
 on:
 #  workflow_dispatch:
@@ -21,10 +21,11 @@ jobs:
           fetch-depth: 1
           set-safe-directory: true
 
-      - name: Check for labels
-        uses: ./.github/actions/check_pr_for_labels
+      - name: Check for Labels
+        uses: ./.github/actions/CheckPRforLabels
         with:
-          required_labels: "(bug|enhancement|documentation),cherry-pick-.*"
+          require_only_one_of: "(bug|enhancement|documentation)"
+          require_at_least_one_of: "cherry-pick-.*"
 #      - name: Check for issue
 #        env:
 #          BODY: ${{ toJSON(github.event.pull_request.body) }}
@@ -44,4 +45,4 @@ jobs:
 #
   UnitTests:
     needs: SimpleChecks
-    uses: ./.github/workflows/run_unit_tests.yml
+    uses: ./.github/workflows/RunUnitTests.yml
