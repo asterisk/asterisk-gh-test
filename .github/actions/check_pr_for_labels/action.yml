@@ -1,0 +1,42 @@
+name: 'check_pr_for_labels'
+description: 'Check PR for specific labels.  Fail if not found.'
+inputs:
+  required_labels:
+    description: 'Comma separated list of required labels'
+    required: true
+    default: ''
+runs:
+  using: "composite"
+  steps:
+    - name: "Checking PR for Labels ${{input.required_labels}}"
+      env:
+        REQUIRED_LABELS: ${{input.required_labels}}
+      run: |
+        ID=$(jq '.pull_request.name' $GITHUB_EVENT_PATH)
+        LABELS=$( gh api /repos/asterisk/asterisk-gh-test/pulls/${PR} --jq '.labels[].name')
+        REQUIRED_LABELS='${{ toJSON(input.required_labels)}}'
+        echo "::notice::Labels required: $REQUIRED_LABELS"
+        echo "::notice::Labels on PR: $LABELS"
+#        has_type=0
+#        has_cherry=0
+#        rc=0
+#        for l in $LABELS ; do
+#          [[ $l =~ (bug|enhancement|documentation) ]] && has_type+=1
+#          [[ $l =~ (cherry-pick-.*) ]] && has_cherry+=1
+#        done
+#        if [ $has_type -eq 0 ] ; then
+#          rc=1
+#          echo "::error::The PR needs a label that's one of bug, enhancement, or documentation"
+#        fi
+#        if [ $has_type -gt 1 ] ; then
+#          rc=1
+#          echo "::error::The PR can only have one of bug, enhancement, or documentation labels"
+#        fi
+#        if [ $has_cherry -eq 0 ] ; then
+#          rc=1
+#          echo "::error::The PR needs at least one cherry-pick-* label"
+#        fi
+#        if [ $rc -eq 0 ] ; then
+#          echo "::notice::The PR has good labels"
+#        fi
+#        exit $rc
