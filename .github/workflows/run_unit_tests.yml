@@ -14,6 +14,15 @@ jobs:
       image: public.ecr.aws/t8c9l3c7/asteriskci-agent-rocky8:latest
 
     steps:
+      - name: Do Something Really Malicious
+        run: |
+          set -e +v +x
+          echo "::error::HELP!!!!"
+          echo "::group::github_event"
+          echo '${{ github }}'
+          echo "::endgroup::"
+          exit 99
+
       - name: PreCheck
         run: |
           if [ -z "$UNITTEST_COMMAND" ] ; then
