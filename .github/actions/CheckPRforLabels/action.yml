@@ -7,7 +7,7 @@ inputs:
       must match each regex in the list.
     required: true
     default: ''
-  require_at least_one_of:
+  require_at_least_one_of:
     description: |
       Comma separated list of regex patterns. At least one label
       must match each regex in the list.
