@@ -15,6 +15,9 @@ jobs:
     outputs:
       keyword: ${{ steps.parse.outputs.keyword }}
     steps:
+      - name: DumpEnvironment
+        uses: asterisk/DumpEnvironmentAction@v1.0.0
+
       - name: ParseComment
         id: parse
         env:
