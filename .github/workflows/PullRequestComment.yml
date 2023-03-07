@@ -4,52 +4,21 @@ run-name: ${{ github.actor }} has added a PR comment
 on:
   issue_comment:
     types: [created]
-env:
-  KEYWORD_REGEX: (check|recheck|regate|pregate)
 
 jobs:
-  CheckForKeywords:
+  PushToCI:
   # Only run if the comment was on a PR
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
-    outputs:
-      keyword: ${{ steps.parse.outputs.keyword }}
     steps:
-      - name: DumpEnvironment
-        uses: asterisk/DumpEnvironmentAction@v1.0.0
-
-      - name: ParseComment
-        id: parse
+      - id: pushit
         env:
-          BODY: ${{ github.event.comment.body }}
+          PAYLOAD: ${{ toJSON(github.event) }}
+          GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
         run: |
-          echo "::group::comment_body"
-          echo $BODY
-          echo "::endgroup::"
-          # Find the first match in the comment
-          kw=$(echo $BODY | sed -n -r -e "0,/^\s*${KEYWORD_REGEX}\s*$/s//keyword=\1/p")
-          echo $kw >> "$GITHUB_OUTPUT"
-          echo "::notice::KW: $kw" 
-          exit 0
-          
-  UnitTests:
-    needs: CheckForKeywords
-    if: endsWith(needs.CheckForKeywords.outputs.keyword, 'check')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Asterisk
-        uses: actions/checkout@v3
-        with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
-          clean: true
-          fetch-depth: 1
-          set-safe-directory: true
-    
-      - name: Will Run Unit tests
-        run: |
-          echo "PWD: $PWD"
-          ls -al
-          find -name testfile.txt
-          echo "::notice::${{needs.CheckForKeywords.outputs.keyword}}"
-          echo "::notice::Yes Will Run Unit tests"
-          
+          echo "::group::crap"
+          echo '{ "event_type": "PullRequestComment", "client_payload": ' > payload.json
+          echo $PAYLOAD >> payload.json
+          echo " }"  >> payload.json
+          echo "::endgroup"
+          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
