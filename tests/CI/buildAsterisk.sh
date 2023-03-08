@@ -116,8 +116,14 @@ fi
 
 export WGET_EXTRA_ARGS="--quiet"
 
+if [ x"$OUTPUT_DIR" != x ] ; then
+	log_to=${OUTPUT_DIR}/configure.log
+else
+	log_to=/dev/stdout
+fi
+
 if [ $NO_CONFIGURE -eq 0 ] ; then
-	runner ./configure ${common_config_args} > ${OUTPUT_DIR:+${OUTPUT_DIR}/}configure.txt
+	runner ./configure ${common_config_args} > "${log_to}"
 fi
 
 if [ $NO_MENUSELECT -eq 0 ] ; then
@@ -174,8 +180,13 @@ if [ $NO_MENUSELECT -eq 0 ] ; then
 	runner menuselect/menuselect `gen_mods enable $mod_enables` menuselect.makeopts
 fi
 
+if [ x"$OUTPUT_DIR" != x ] ; then
+	log_to=${OUTPUT_DIR}/build.log
+else
+	log_to=/dev/stdout
+fi
 if [ $NO_MAKE -eq 0 ] ; then
-runner ${MAKE} -j8 full || runner ${MAKE} -j1 NOISY_BUILD=yes full
+runner ${MAKE} -j8 full >"${log_to}" || runner ${MAKE} -j1 NOISY_BUILD=yes full >"${log_to}"
 fi
 
 runner rm -f ${LCOV_DIR}/*.info
