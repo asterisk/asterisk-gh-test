@@ -5,5 +5,18 @@ on:
     types: [opened, reopened, synchronize]
 
 jobs:
-  UnitTests:
-    uses: ./.github/workflows/RunUnitTests.yml
+  PushToCI:
+    runs-on: ubuntu-latest
+    steps:
+      - id: pushit
+        env:
+          PAYLOAD: ${{ toJSON(github.event) }}
+        run: |
+           echo ${{ toJSON(github) }}
+#          echo "::group::crap"
+#          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
+#          echo $PAYLOAD >> payload.json
+#          echo " }"  >> payload.json
+#          echo "::endgroup"
+#          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
+    
