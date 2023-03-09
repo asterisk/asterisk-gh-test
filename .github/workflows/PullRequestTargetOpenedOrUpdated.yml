@@ -1,8 +1,9 @@
-name: PullRequestOpenedOrUpdated
+name: PullRequestTargetOpenedOrUpdated
 run-name: ${{ github.actor }} has submitted a pull request
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+#  pull_request_target:
+#    types: [opened, reopened, synchronize]
 
 jobs:
   PushToCI:
