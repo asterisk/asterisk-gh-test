@@ -16,9 +16,12 @@ jobs:
           PAYLOAD: ${{ toJSON(github.event) }}
           GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
         run: |
-          echo "::group::crap"
-          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
-          echo $PAYLOAD >> payload.json
-          echo " }"  >> payload.json
-          echo "::endgroup"
-          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
+          echo "LOCAL CHANGESD"
+          exit 1
+#        run: |
+#          echo "::group::crap"
+#          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
+#          echo $PAYLOAD >> payload.json
+#          echo " }"  >> payload.json
+#          echo "::endgroup"
+#          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
