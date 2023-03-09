@@ -39,3 +39,7 @@ jobs:
 #          echo " }"  >> payload.json
 #          echo "::endgroup"
 #          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
+
+  CallableTest:
+    needs: PushToCI
+    uses: ./.github/workflows/CallableTest.yml
