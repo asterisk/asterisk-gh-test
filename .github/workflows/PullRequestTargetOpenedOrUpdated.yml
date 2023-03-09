@@ -1,0 +1,19 @@
+name: PullRequestTargetOpenedOrUpdated
+run-name: ${{ github.actor }} has submitted a pull request
+on:
+#  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  DumpEnvironment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+  UnitTests:
+    needs: DumpEnvironment
+    uses: ./.github/workflows/RunUnitTests.yml
+    secrets: inherit
+    
