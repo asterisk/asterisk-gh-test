@@ -8,14 +8,34 @@ jobs:
   PushToCI:
     runs-on: ubuntu-latest
     steps:
-      - id: pushit
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: Checkout Asterisk
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+          clean: true
+          fetch-depth: 1
+          set-safe-directory: true
+
+      - id: checkit
         env:
           PAYLOAD: ${{ toJSON(github.event) }}
           GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
         run: |
-          echo "::group::crap"
-          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
-          echo $PAYLOAD >> payload.json
-          echo " }"  >> payload.json
-          echo "::endgroup"
-          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
+          ls -al ./.github/scripts/
+          ./.github/scripts/noop.sh
+          exit 0
+
+#      - id: pushit
+#        env:
+#          PAYLOAD: ${{ toJSON(github.event) }}
+#          GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
+#        run: |
+#          echo "::group::crap"
+#          echo '{ "event_type": "PullRequestOpenedOrUpdated", "client_payload": ' > payload.json
+#          echo $PAYLOAD >> payload.json
+#          echo " }"  >> payload.json
+#          echo "::endgroup"
+#          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
