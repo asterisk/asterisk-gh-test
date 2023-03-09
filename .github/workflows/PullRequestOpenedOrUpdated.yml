@@ -8,6 +8,9 @@ jobs:
   PushToCI:
     runs-on: ubuntu-latest
     steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
       - id: pushit
         env:
           PAYLOAD: ${{ toJSON(github.event) }}
