@@ -5,20 +5,46 @@ on:
   issue_comment:
     types: [created]
 
+env:
+  KEYWORD_REGEX: ${{vars.PR_COMMENT_KEYWORD_REGEX}}
+
 jobs:
-  PushToCI:
+  CheckForKeywords:
   # Only run if the comment was on a PR
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
+    outputs:
+      keyword: ${{ steps.parse.outputs.keyword }}
+      pr-sha: ${{ steps.parse.outputs.sha }}
     steps:
-      - id: pushit
+      - name: DumpEnvironment
+        uses: /asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: ParseComment
+        id: parse
         env:
-          PAYLOAD: ${{ toJSON(github.event) }}
-          GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BODY: ${{ github.event.comment.body }}
         run: |
-          echo "::group::crap"
-          echo '{ "event_type": "PullRequestComment", "client_payload": ' > payload.json
-          echo $PAYLOAD >> payload.json
-          echo " }"  >> payload.json
-          echo "::endgroup"
-          gh api repos/asterisk/asterisk-ci/dispatches --input payload.json
+          # Find the first match in the comment
+          kw=$(echo $BODY | sed -n -r -e "0,/^\s*${KEYWORD_REGEX}\s*$/s//keyword=\1/p")
+          if [ x"$kw" == x ] ; then
+            kw="keyword=NO_KEYWORDS"
+          fi
+          echo $kw >> "$GITHUB_OUTPUT"
+          echo "::notice::KW: $kw"
+          
+          sha=sha=$(gh api /repos/asterisk/asterisk-gh-test/pulls/${{github.event.issue.number}} --jq '.head.sha')
+          echo $sha >> "$GITHUB_OUTPUT"
+          echo "::notice::SHA: $sha"
+          exit 0
+
+  UnitTests:
+    needs: CheckForKeywords
+    if: endsWith(needs.CheckForKeywords.outputs.keyword, 'check')
+    uses: ./.github/workflows/RunUnitTests.yml
+    with:
+      pr-number: ${{github.event.issue.number}}
+      pr-sha: ${{needs.CheckForKeywords.outputs.pr-sha}}
+    secrets: inherit
+

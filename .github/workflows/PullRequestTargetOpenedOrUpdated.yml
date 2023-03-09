@@ -15,5 +15,8 @@ jobs:
   UnitTests:
     needs: DumpEnvironment
     uses: ./.github/workflows/RunUnitTests.yml
+    with:
+      pr-number: ${{github.event.pull_request.number}}
+      pr-sha: ${{github.event.pull_request.head.sha}}
     secrets: inherit
     
