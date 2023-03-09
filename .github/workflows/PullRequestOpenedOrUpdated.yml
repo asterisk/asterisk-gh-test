@@ -23,6 +23,7 @@ jobs:
           PAYLOAD: ${{ toJSON(github.event) }}
           GH_TOKEN: ${{ secrets.ASTERISKTEAM_PAT }}
         run: |
+          echo "hjfdshjkfdshjkfdgshjkdfgshjkdfhjgkdfhgjkhjdgkfhjdfgk"
           ./.github/scripts/noop.sh
           exit 0
 
