@@ -1,5 +1,5 @@
 name: PullRequestComment
-run-name: ${{ github.actor }} has added a PR comment
+run-name: "PR ${{github.event.issue.number}} : Comment by ${{ github.actor }}" 
 # PR comments are reported via issue_comments
 on:
   issue_comment:
@@ -9,13 +9,12 @@ env:
   KEYWORD_REGEX: ${{vars.PR_COMMENT_KEYWORD_REGEX}}
 
 jobs:
-  CheckForKeywords:
+  PullRequestComment:
   # Only run if the comment was on a PR
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
-    outputs:
-      keyword: ${{ steps.parse.outputs.keyword }}
-      pr-sha: ${{ steps.parse.outputs.sha }}
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
       - name: DumpEnvironment
         uses: /asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
@@ -38,13 +37,41 @@ jobs:
           echo $sha >> "$GITHUB_OUTPUT"
           echo "::notice::SHA: $sha"
           exit 0
+          
+      - name: Checkout Asterisk
+        uses: actions/checkout@v3
+        with:
+          ref: refs/heads/master
+          clean: true
+          fetch-depth: 1
+          set-safe-directory: true
 
-  UnitTests:
-    needs: CheckForKeywords
-    if: endsWith(needs.CheckForKeywords.outputs.keyword, 'check')
-    uses: ./.github/workflows/RunUnitTests.yml
-    with:
-      pr-number: ${{github.event.issue.number}}
-      pr-sha: ${{needs.CheckForKeywords.outputs.pr-sha}}
-    secrets: inherit
+      - if: endsWith(steps.parse.outputs.keyword, 'check')
+        name: Run Unit Tests
+        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+        with:
+          pr-number: ${{github.event.issue.number}}
+          pr-sha: ${{steps.parse.outputs.sha}}
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          unittest-command: ${{vars.UNITTEST_COMMAND}}
+         
+#      - if: endsWith(steps.parse.outputs.keyword, 'gate')
+#        name: Run Gate Tests
+#        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+#        with:
+#          pr-number: ${{github.event.issue.number}}
+#          pr-sha: ${{steps.parse.outputs.sha}}
+#          github-token: ${{secrets.GITHUB_TOKEN}}
+#          unittest-command: ${{vars.UNITTEST_COMMAND}}
+#         
 
+
+#  UnitTests:
+#    needs: CheckForKeywords
+#    if: endsWith(needs.CheckForKeywords.outputs.keyword, 'check')
+#    uses: ./.github/workflows/RunUnitTests.yml
+#    with:
+#      pr-number: ${{github.event.issue.number}}
+#      pr-sha: ${{needs.CheckForKeywords.outputs.pr-sha}}
+#    secrets: inherit
+#

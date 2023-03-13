@@ -155,5 +155,6 @@ jobs:
         uses: /asterisk/asterisk-ci-actions/publish-unit-test-result-action/composite@main
 #        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
         with:
+          check_name: Unit Test Results
           commit: ${{ inputs.pr-sha }}
           files: tests/CI/output/*.xml
