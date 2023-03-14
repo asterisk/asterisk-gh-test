@@ -8,7 +8,7 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
-if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
 	OUTPUT_DIR+=/
 fi
 
@@ -33,7 +33,7 @@ declare -p _version
 declare -p destdir
 } >>"${log_to}"
 
-echo "::notice::Uninstalling exisitng build"
+echo "::notice::Uninstalling existing build"
 begin_log "${OUTPUT_DIR}/uninstall"
 (
 [ $UNINSTALL -gt 0 ] && ${MAKE} ${destdir} uninstall

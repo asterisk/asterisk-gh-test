@@ -14,7 +14,7 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
-if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
 	OUTPUT_DIR+=/
 fi
 
@@ -189,6 +189,7 @@ if [ $NO_MENUSELECT -eq 0 ] ; then
 			mod_disables+=" res_ael_share res_calendar res_config_ldap res_config_pgsql res_corosync"
 			mod_disables+=" res_http_post res_rtp_multicast res_snmp res_xmpp"
 		fi
+		mod_disables+=" $MODULES_BLACKLIST"
 	
 		runner menuselect/menuselect `gen_mods disable $mod_disables` menuselect.makeopts
 	

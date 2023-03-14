@@ -58,12 +58,13 @@ jobs:
       - name: Run Unit Tests
         uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
         with:
-          asterisk-repo:    ${{ github.repository }}
-          pr-number:        ${{ github.event.issue.number }}
-          pr-commit:        ${{ needs.PullRequestComment.outputs.commit }}
-          base-branch:      ${{ needs.PullRequestComment.outputs.base-branch }}
-          github-token:     ${{ secrets.GITHUB_TOKEN }}
-          unittest-command: ${{ vars.UNITTEST_COMMAND }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          unittest-command:  ${{ vars.UNITTEST_COMMAND }}
+          modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
 
   GateTests:
     needs: PullRequestComment
@@ -82,7 +83,8 @@ jobs:
           pr-number:         ${{ github.event.issue.number }}
           pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
           base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
-          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
           github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
+          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
           gatetest-group:    ${{ matrix.group }}
           gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 

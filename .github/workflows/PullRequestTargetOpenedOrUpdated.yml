@@ -23,3 +23,4 @@ jobs:
           base-branch:      ${{ github.event.pull_request.base.ref }}
           github-token:     ${{ secrets.GITHUB_TOKEN }}
           unittest-command: ${{ vars.UNITTEST_COMMAND }}
+          modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
