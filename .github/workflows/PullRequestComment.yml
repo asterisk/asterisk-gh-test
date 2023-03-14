@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       keyword: ${{ steps.parse.outputs.keyword }}
-      pr-sha: ${{ steps.parse.outputs.sha }}
+      commit: ${{ steps.parse.outputs.commit }}
       base-branch: ${{ steps.parse.outputs.base-branch }}
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -34,22 +34,23 @@ jobs:
           if [ x"$kw" == x ] ; then
             kw="keyword=NO_KEYWORDS"
           fi
-          echo $kw >> "$GITHUB_OUTPUT"
+          echo "$kw" >> "$GITHUB_OUTPUT"
           echo "::notice::KW: $kw"
           
-          sha=sha=$(gh api /repos/${{github.repository}}/pulls/${{github.event.issue.number}} --jq '.head.sha')
-          echo $sha >> "$GITHUB_OUTPUT"
-          echo "::notice::SHA: $sha"
+          commit=commit=$(gh api /repos/${{github.repository}}/pulls/${{github.event.issue.number}} --jq '.head.sha')
+          echo "$commit" >> "$GITHUB_OUTPUT"
+          echo "::notice::commit: $commit"
           
           base_branch=base-branch=$(gh api /repos/${{github.repository}}/pulls/${{github.event.issue.number}} --jq .base.ref)
-          echo $base_branch >> "$GITHUB_OUTPUT"
+          echo "$base_branch" >> "$GITHUB_OUTPUT"
           echo "::notice::BRANCH: $base_branch"
-          
-          exit 0
-          
+
   UnitTests:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'check')
+    strategy:
+      matrix:
+        group: [ all ]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -57,11 +58,12 @@ jobs:
       - name: Run Unit Tests
         uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
         with:
-          pr-number: ${{github.event.issue.number}}
-          pr-sha: ${{needs.PullRequestComment.outputs.sha}}
-          base-branch: ${{needs.PullRequestComment.outputs.base-branch}}
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          unittest-command: ${{vars.UNITTEST_COMMAND}}
+          asterisk-repo:    ${{ github.repository }}
+          pr-number:        ${{ github.event.issue.number }}
+          pr-commit:        ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:      ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:     ${{ secrets.GITHUB_TOKEN }}
+          unittest-command: ${{ vars.UNITTEST_COMMAND }}
 
   GateTests:
     needs: PullRequestComment
@@ -76,10 +78,11 @@ jobs:
       - name: Run Gate Tests for group ${{ matrix.group }}
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
-          pr-number: ${{github.event.issue.number}}
-          pr-sha: ${{needs.PullRequestComment.outputs.sha}}
-          base-branch: ${{needs.PullRequestComment.outputs.base-branch}}
-          testsuite-repo: ${{ vars.TESTSUITE_REPO }}
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          gatetest-group: ${{ matrix.group }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          gatetest-group:    ${{ matrix.group }}
           gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 

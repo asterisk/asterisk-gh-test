@@ -14,6 +14,10 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
+if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+	OUTPUT_DIR+=/
+fi
+
 set -e
 
 if [ -z $BRANCH_NAME ]; then

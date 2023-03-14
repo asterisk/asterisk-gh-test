@@ -8,6 +8,10 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
+if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+	OUTPUT_DIR+=/
+fi
+
 mkdir -p "$OUTPUT_DIR" 2> /dev/null
 
 MAKE=`which make`
@@ -23,22 +27,22 @@ _version=$(./build_tools/make_version .)
 
 destdir=${DESTDIR:+DESTDIR=$DESTDIR}
 
-begin_log ${OUTPUT_DIR}/variables
+begin_log "${OUTPUT_DIR}/variables"
 {
 declare -p _version
 declare -p destdir
 } >>"${log_to}"
 
 echo "::notice::Uninstalling exisitng build"
-begin_log ${OUTPUT_DIR}/uninstall
+begin_log "${OUTPUT_DIR}/uninstall"
 (
 [ $UNINSTALL -gt 0 ] && ${MAKE} ${destdir} uninstall
 [ $UNINSTALL_ALL -gt 0 ] && ${MAKE} ${destdir} uninstall-all
-) >>"$log_out" 2>>"$err_out"  || { echo "::error::Uninstall failed.  See ${err_to} for more details." ; exit 1 ; }
+) >>"$log_to" 2>>"$err_to"
 end_log
 
 echo "::notice::Installing"
-begin_log ${OUTPUT_DIR}/install
+begin_log "${OUTPUT_DIR}/install"
 (
 	${MAKE} ${destdir} install || ${MAKE} ${destdir} NOISY_BUILD=yes install || exit 1
 	${MAKE} ${destdir} samples install-headers 
