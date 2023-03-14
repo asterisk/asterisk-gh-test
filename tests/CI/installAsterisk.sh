@@ -8,6 +8,8 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
+mkdir -p "$OUTPUT_DIR" 2> /dev/null
+
 MAKE=`which make`
 
 if [ x"$DESTDIR" != x ] ; then
@@ -21,8 +23,11 @@ _version=$(./build_tools/make_version .)
 
 destdir=${DESTDIR:+DESTDIR=$DESTDIR}
 
+begin_log ${OUTPUT_DIR}/variables
+{
 declare -p _version
 declare -p destdir
+} >>"${log_to}"
 
 echo "::notice::Uninstalling exisitng build"
 begin_log ${OUTPUT_DIR}/uninstall
