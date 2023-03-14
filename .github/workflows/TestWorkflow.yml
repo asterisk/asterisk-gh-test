@@ -1,0 +1,18 @@
+name: Test Workflow
+run-name: "Test workflow started by ${{ github.actor }}"
+on:
+  workflow_dispatch:
+
+jobs:
+  TestWorkflow:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Asterisk
+      uses: asterisk/asterisk-ci-actions/checkout@main
+      with:
+        ref: master
+        clean: true
+        fetch-depth: 5
+        set-safe-directory: true
+        quiet: true
+
