@@ -2,7 +2,13 @@
 CIDIR=$(dirname $(readlink -fn $0))
 GITHUB=0
 NO_EXPECT=0
+OUTPUT_DIR=/tmp/asterisk_ci/
+
 source $CIDIR/ci.functions
+
+if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+	OUTPUT_DIR+=/
+fi
 ASTETCDIR=$DESTDIR/etc/asterisk
 
 asterisk_corefile_glob() {
