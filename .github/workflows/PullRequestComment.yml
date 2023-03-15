@@ -45,6 +45,17 @@ jobs:
           echo "$base_branch" >> "$GITHUB_OUTPUT"
           echo "::notice::BRANCH: $base_branch"
 
+      - name: Build and Cache Asterisk
+        uses: asterisk/asterisk-ci-actions/BuildAndCacheAsterisk@main
+        with:
+          cache-key:         ${{ github.event.issue.number }}-${{ github.event.comment.updated_at }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.issue.number }}
+          pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
+          base-branch:       ${{ needs.PullRequestComment.outputs.base-branch }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
+
   UnitTests:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'check')
@@ -58,6 +69,7 @@ jobs:
       - name: Run Unit Tests
         uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
         with:
+          cache-key:         ${{ github.event.issue.number }}-${{ github.event.comment.updated_at }}
           asterisk-repo:     ${{ github.repository }}
           pr-number:         ${{ github.event.issue.number }}
           pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
@@ -69,17 +81,20 @@ jobs:
   GateTests:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'gate')
+    continue-on-error: true
     strategy:
-      continue-on-error: true
+      fail-fast: false
       matrix:
         group: ${{ fromJSON(vars.GATETEST_LIST) }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
+      
       - name: Run Gate Tests for group ${{ matrix.group }}
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
+          cache-key:         ${{ github.event.issue.number }}-${{ github.event.comment.updated_at }}
           asterisk-repo:     ${{ github.repository }}
           pr-number:         ${{ github.event.issue.number }}
           pr-commit:         ${{ needs.PullRequestComment.outputs.commit }}
