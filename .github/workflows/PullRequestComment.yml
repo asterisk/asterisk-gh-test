@@ -70,6 +70,7 @@ jobs:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'gate')
     strategy:
+      continue-on-error: true
       matrix:
         group: ${{ fromJSON(vars.GATETEST_LIST) }}
     runs-on: ubuntu-latest

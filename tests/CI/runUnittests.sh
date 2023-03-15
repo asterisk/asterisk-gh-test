@@ -6,9 +6,10 @@ OUTPUT_DIR=/tmp/asterisk_ci/
 
 source $CIDIR/ci.functions
 
-if [ "${OUTPUT_DIR[-1]}" != "/" ] ; then
+if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
 	OUTPUT_DIR+=/
 fi
+
 ASTETCDIR=$DESTDIR/etc/asterisk
 
 asterisk_corefile_glob() {
@@ -124,16 +125,13 @@ EOF
 
 ASTERISK="$DESTDIR/usr/sbin/asterisk"
 CONFFILE=$ASTETCDIR/asterisk.conf
-OUTPUTDIR=${OUTPUT_DIR:-tests/CI/output/}
-OUTPUTFILE=${OUTPUT_XML:-${OUTPUTDIR}/unittests-results.xml}
+OUTPUTFILE=${OUTPUT_XML:-${OUTPUT_DIR}/unittests-results.xml}
 EXPECT="$(which expect 2>/dev/null || : )"
 
-[ ! -d ${OUTPUTDIR} ] && mkdir -p $OUTPUTDIR
-[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUTDIR
+[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUT_DIR
 
 rm -rf $ASTETCDIR/extensions.{ael,lua} || :
 
-set -x
 if [ x"$EXPECT" != x -a $NO_EXPECT -eq 0 ] ; then
 	run_tests_expect
 else
@@ -143,10 +141,9 @@ fi
 # Cleanup "just in case"
 sudo killall -qe -ABRT $ASTERISK
 
-runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUTDIR
-set +x
+runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUT_DIR
 
-[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUTDIR
+[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUT_DIR
 
 for core in $(asterisk_corefile_glob)
 do
@@ -154,7 +151,7 @@ do
 	then
 		echo "*** Found a core file ($core) after running unit tests ***"
 		set -x
-		sudo $DESTDIR/var/lib/asterisk/scripts/ast_coredumper --outputdir=$OUTPUTDIR --no-default-search $core
+		sudo $DESTDIR/var/lib/asterisk/scripts/ast_coredumper --outputdir=$OUTPUT_DIR --no-default-search $core
 	fi
 done
 
