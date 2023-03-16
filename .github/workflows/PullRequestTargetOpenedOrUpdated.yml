@@ -6,7 +6,7 @@ on:
     types: [opened, reopened, synchronize]
 
 jobs:
-  PullRequestTargetOpenedOrUpdated:
+  AsteriskUnitTests:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest

@@ -57,7 +57,7 @@ jobs:
           github-token:      ${{ secrets.GITHUB_TOKEN }}
           modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
 
-  UnitTests:
+  AsteriskUnitTests:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'check')
     strategy:
@@ -79,7 +79,7 @@ jobs:
           unittest-command:  ${{ vars.UNITTEST_COMMAND }}
           modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
 
-  GateTests:
+  AsteriskGateTests:
     needs: PullRequestComment
     if: endsWith(needs.PullRequestComment.outputs.keyword, 'gate')
     continue-on-error: true
