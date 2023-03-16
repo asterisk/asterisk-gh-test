@@ -3,6 +3,9 @@ run-name: "Test workflow started by ${{ github.actor }}"
 on:
   workflow_dispatch:
 
+env:
+  CACHE_KEY: RUN:${{ github.run_number }}-RID:${{ github.run_id }}
+   
 jobs:
   TestWorkflow:
     runs-on: ubuntu-latest
@@ -16,3 +19,9 @@ jobs:
         set-safe-directory: true
         quiet: true
 
+    - name: Cache Build Products
+      if: ${{ env.CACHE_KEY }} != ""
+      uses: actions/cache@v3
+      with:
+        key: ${{ env.CACHE_KEY }}
+        path: ./tests/CI
