@@ -1,4 +1,4 @@
-name: PullRequestTargetOpenedOrUpdated
+name: PROpenedOrUpdated
 run-name: "PR ${{github.event.number}} : Opened, reopened or updated by ${{ github.actor }}"
 on:
 #  workflow_dispatch:
