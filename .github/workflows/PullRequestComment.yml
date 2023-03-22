@@ -2,8 +2,9 @@ name: PullRequestComment
 run-name: "PR ${{github.event.issue.number}} : Comment by ${{ github.actor }}" 
 # PR comments are reported via issue_comments
 on:
-  issue_comment:
-    types: [created]
+  workflow-dispatch:
+#  issue_comment:
+#    types: [created]
 
 env:
   KEYWORD_REGEX: ${{vars.PR_COMMENT_KEYWORD_REGEX}}

@@ -1,0 +1,79 @@
+name: PROpenedOrUpdated
+run-name: "PR ${{github.event.number}} : Opened, reopened or updated by ${{ github.actor }}"
+on:
+#  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+env:
+  CACHE_KEY: PR:${{ github.event.number }}-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
+
+jobs:
+  AsteriskUnitTests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: Build and Cache Asterisk
+        uses: asterisk/asterisk-ci-actions/BuildAndCacheAsterisk@main
+        with:
+          cache-key:         ${{ env.CACHE_KEY }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.number }}
+          pr-commit:        ${{ github.event.pull_request.head.sha }}
+          base-branch:      ${{ github.event.pull_request.base.ref }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }} ${{ vars.UNITTEST_MODULES_BLACKLIST }}
+
+      - name: Run Unit Tests
+        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+        with:
+          cache-key:        ${{ env.CACHE_KEY }}
+          asterisk-repo:    ${{ github.repository }}
+          pr-number:        ${{ github.event.number }}
+          pr-commit:        ${{ github.event.pull_request.head.sha }}
+          base-branch:      ${{ github.event.pull_request.base.ref }}
+          github-token:     ${{ secrets.GITHUB_TOKEN }}
+          unittest-command: ${{ vars.UNITTEST_COMMAND }}
+          modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
+
+      - name: Add Reviewers
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+          REVIEWERS: ${{ vars.PR_REVIEWERS }}
+        run: |
+          IFS=$'; \n'
+          for r in $REVIEWERS ; do
+            gh pr edit $PR_NUMBER --add-reviewer $r
+          done
+
+  AsteriskGateTests:
+    needs: AsteriskUnitTests
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(vars.GATETEST_LIST) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      
+      - name: Run Gate Tests for group ${{ matrix.group }}
+        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+        with:
+          cache-key:         ${{ env.CACHE_KEY }}
+          asterisk-repo:     ${{ github.repository }}
+          pr-number:         ${{ github.event.number }}
+          pr-commit:         ${{ github.event.pull_request.head.sha }}
+          base-branch:       ${{ github.event.pull_request.base.ref }}
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
+          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
+          gatetest-group:    ${{ matrix.group }}
+          gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 

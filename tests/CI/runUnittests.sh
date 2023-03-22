@@ -45,6 +45,8 @@ $EXPECT <<-EOF
 	wait
 EOF
 [ $GITHUB -eq 1 ] && echo "::endgroup::"
+	xmlstarlet sel -t -v "//failure" $OUTPUTFILE && return 1
+	return 0
 }
 
 run_tests_socket() {
@@ -71,6 +73,8 @@ run_tests_socket() {
 	$ASTERISK -rx "test generate results xml $OUTPUTFILE" -C $CONFFILE
 	$ASTERISK -rx "core stop now" -C $CONFFILE
 	[ $GITHUB -eq 1 ] && echo "::endgroup::"
+	xmlstarlet sel -t -v "//failure" $OUTPUTFILE && return 1
+	return 0
 }
 
 # If DESTDIR is used to install and run asterisk from non standard locations,
@@ -132,10 +136,11 @@ EXPECT="$(which expect 2>/dev/null || : )"
 
 rm -rf $ASTETCDIR/extensions.{ael,lua} || :
 
+TESTRC=0
 if [ x"$EXPECT" != x -a $NO_EXPECT -eq 0 ] ; then
-	run_tests_expect
+	run_tests_expect || TESTRC=1
 else
-	run_tests_socket
+	run_tests_socket || TESTRC=1
 fi
 
 # Cleanup "just in case"
@@ -155,4 +160,4 @@ do
 	fi
 done
 
-exit 0
+exit $TESTRC
