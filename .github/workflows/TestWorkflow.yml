@@ -10,18 +10,15 @@ jobs:
   TestWorkflow:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Asterisk
-      uses: asterisk/asterisk-ci-actions/checkout@main
-      with:
-        ref: master
-        clean: true
-        fetch-depth: 5
-        set-safe-directory: true
-        quiet: true
-
-    - name: Cache Build Products
-      if: ${{ env.CACHE_KEY }} != ""
-      uses: actions/cache@v3
-      with:
-        key: ${{ env.CACHE_KEY }}
-        path: ./tests/CI
+      - name: Add Reviewers
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ secrets.ASTERISK_ORG_ACCESS_APP_CLIENT_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.ASTERISK_ORG_ACCESS_APP_CLIENT_SECRET }}
+          PR_NUMBER: 46
+          REVIEWERS: ${{ vars.PR_REVIEWERS }}
+        run: |
+          IFS=$'; \n'
+          for r in $REVIEWERS ; do
+            gh pr edit $PR_NUMBER --add-reviewer $r
+          done
