@@ -40,10 +40,19 @@ jobs:
           unittest-command: ${{ vars.UNITTEST_COMMAND }}
           modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
 
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{ secrets.ASTERISK_ORG_ACCESS_APP_ID }}
+          application_private_key: ${{ secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY }}
+          organization: asterisk
+
       - name: Add Reviewers
         if: ${{ success() }}
         env:
-          GH_TOKEN: ${{ secrets.ASTERISKTEAM_REVIEWERS_FINE }}
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
           PR_NUMBER: ${{ github.event.number }}
           REVIEWERS: ${{ vars.PR_REVIEWERS }}
         run: |
@@ -63,7 +72,6 @@ jobs:
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-      
       - name: Run Gate Tests for group ${{ matrix.group }}
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
