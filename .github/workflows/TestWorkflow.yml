@@ -10,11 +10,19 @@ jobs:
   TestWorkflow:
     runs-on: ubuntu-latest
     steps:
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{ secrets.ASTERISK_ORG_ACCESS_APP_ID }}
+          application_private_key: ${{ secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY }}
+          organization: asterisk
+
       - name: Add Reviewers
         if: ${{ success() }}
         env:
-          GH_TOKEN: ${{ secrets.ASTERISK_ORG_ACCESS_APP_CLIENT_SECRET }}
-          GITHUB_TOKEN: ${{ secrets.ASTERISK_ORG_ACCESS_APP_CLIENT_SECRET }}
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
           PR_NUMBER: 46
           REVIEWERS: ${{ vars.PR_REVIEWERS }}
         run: |
