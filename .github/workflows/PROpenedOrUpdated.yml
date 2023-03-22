@@ -43,7 +43,7 @@ jobs:
       - name: Add Reviewers
         if: ${{ success() }}
         env:
-          GH_TOKEN: ${{ secrets.ASTERISK_ORG_ACCESS_APP_CLIENT_SECRET }}
+          GH_TOKEN: ${{ secrets.ASTERISKTEAM_REVIEWERS_FINE }}
           PR_NUMBER: ${{ github.event.number }}
           REVIEWERS: ${{ vars.PR_REVIEWERS }}
         run: |
