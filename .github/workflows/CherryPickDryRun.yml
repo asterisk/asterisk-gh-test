@@ -70,6 +70,19 @@ jobs:
     needs: CherryPickDryRunMatrix
     steps:
       - name: Check CherryPickDryRun matrix
-        if: ${{ needs.CherryPickDryRunMatrix.result != 'success' }}
-        run: exit 1
-          
+        env:
+          RESULT: ${{ needs.CherryPickDryRunMatrix.result }}
+        run: |
+          case $RESULT in
+            success)
+              echo "::notice::All cherry-pick dry-runs succeeded"
+              exit 0
+              ;;
+            skipped)
+              echo "::notice::No cherry-pick dry-runs were required"
+              exit 0
+              ;;
+              *)
+              echo "::error::One or more cherry-pick dry-runs failed" 
+              exit 1
+          esac
