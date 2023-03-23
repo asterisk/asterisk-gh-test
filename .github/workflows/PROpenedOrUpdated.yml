@@ -93,9 +93,9 @@ jobs:
           gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 
 
   AsteriskGateTests:
+    name: AsteriskGateTests
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    name: AsteriskGateTests (all)
     needs: AsteriskGateMatrix
     steps:
       - name: Check test matrix status

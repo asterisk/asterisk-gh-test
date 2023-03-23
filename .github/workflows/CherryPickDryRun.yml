@@ -6,6 +6,7 @@ on:
 
 jobs:
   IdentifyBranches:
+    name: IdentifyBranches
     outputs:
       branches: ${{ steps.getbranches.outputs.branches }}
     runs-on: ubuntu-latest
@@ -43,7 +44,8 @@ jobs:
             echo "::notice::Branches that will have cherry-picks testeds: $json"
           fi
 
-  CherryPickDryRun:
+  CherryPickDryRunMatrix:
+    name: CherryPickDryRunMatrix
     needs: IdentifyBranches
     if: needs.IdentifyBranches.outputs.branches != '[]'
     strategy:
@@ -64,10 +66,10 @@ jobs:
   CherryPickDryRuns:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    name: CherryPickDryRuns (all)
-    needs: CherryPickDryRun
+    name: CherryPickDryRuns
+    needs: CherryPickDryRunMatrix
     steps:
       - name: Check CherryPickDryRun matrix
-        if: ${{ needs.CherryPickDryRun.result != 'success' }}
+        if: ${{ needs.CherryPickDryRunMatrix.result != 'success' }}
         run: exit 1
           
