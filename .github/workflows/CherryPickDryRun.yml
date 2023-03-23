@@ -1,0 +1,62 @@
+name: CherryPickTester
+run-name: "Cherry-Pick Dry-Run for PR ${{github.event.number}}"
+on:
+  pull_request_target:
+    types: [ labeled ]
+
+jobs:
+  IdentifyBranches:
+    outputs:
+      branches: ${{ steps.getbranches.outputs.branches }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+      - name: Get cherry-pick branches
+        id: getbranches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{github.event.number}}
+          CHERRY_PICK_REGEX: ${{ vars.CHERRY_PICK_REGEX }}
+        run: |
+          branchlist=$(gh api /repos/${REPO}/issues/${PR_NUMBER}/comments \
+            --jq '.[].body | match("${{ vars.CHERRY_PICK_REGEX }}"; "g") | .captures[0].string' | tr '\n' ' ')
+          echo $branchlist
+          eval declare -a BRANCHES=( $branchlist )
+          declare -p BRANCHES
+          branch_count=0
+          json="["
+          for branch in ${BRANCHES[@]} ; do
+            echo "Will cherry-pick to branch $branch"
+            [ $branch_count -ne 0 ] && json+=","
+            json+="'$branch'"
+            branch_count+=1
+          done
+          json+="]"
+          echo "branches=$json" >> "$GITHUB_OUTPUT"
+          if [ $branch_count -eq 0 ] ; then
+            echo "::notice::No branches needing cherry picks identified"
+          else
+            echo "::notice::Branches that will have cherry-picks testeds: $json"
+          fi
+
+  CherryPickDryRun:
+    needs: IdentifyBranches
+    if: needs.IdentifyBranches.outputs.branches != '[]'
+    strategy:
+      matrix:
+        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: DoIt
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          if [ $BRANCH == master ] ; then
+            echo "::error::Test error for branch $BRANCH"
+            exit 1
+          fi
+          echo "::notice::Do something for branch $BRANCH"
