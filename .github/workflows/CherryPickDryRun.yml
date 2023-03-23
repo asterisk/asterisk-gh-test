@@ -60,3 +60,14 @@ jobs:
             exit 1
           fi
           echo "::notice::Do something for branch $BRANCH"
+          
+  CherryPickDryRuns:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: CherryPickDryRuns (all)
+    needs: CherryPickDryRun
+    steps:
+      - name: Check CherryPickDryRun matrix
+        if: ${{ needs.CherryPickDryRun.result != 'success' }}
+        run: exit 1
+          
