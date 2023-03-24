@@ -2,31 +2,54 @@ name: Test Workflow
 run-name: "Test workflow started by ${{ github.actor }}"
 on:
   workflow_dispatch:
-
+  
 env:
-  CACHE_KEY: RUN:${{ github.run_number }}-RID:${{ github.run_id }}
-   
+  CACHE_KEY: PR:123-RUN:456-RID:789
+  
 jobs:
   TestWorkflow:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-      - name: Get Token
-        id: get_workflow_token
-        uses: peter-murray/workflow-application-token-action@v1
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+        
+      - name: GetAsterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
-          application_id: ${{ secrets.ASTERISK_ORG_ACCESS_APP_ID }}
-          application_private_key: ${{ secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY }}
-          organization: asterisk
+          to-cache-key: ${{env.CACHE_KEY}}
+          base-branch: master
+          modules-blacklist: codec_ilbc test_crypto
+          
+  UseCachedResults:
+    needs: TestWorkflow
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
 
-      - name: Add Reviewers
-        if: ${{ success() }}
-        env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-          PR_NUMBER: 46
-          REVIEWERS: ${{ vars.PR_REVIEWERS }}
-        run: |
-          IFS=$'; \n'
-          for r in $REVIEWERS ; do
-            gh pr -R asterisk/asterisk-gh-test edit $PR_NUMBER --add-reviewer $r
-          done
+      - name: GetAsterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key: ${{env.CACHE_KEY}}
+          base-branch: master
+          modules-blacklist: codec_ilbc test_crypto
+
+      - name: RunUnitTests
+        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+        with:
+          base-branch: master
+
+  DeleteCache:
+    runs-on: ubuntu-latest
+    needs: UseCachedResults
+    if: ${{success()}}
+    steps:
+      - name: DeleteCache
+        uses: snnaplab/delete-branch-cache-action@v1
+        with:
+          ref: refs/heads/master
+          key: ${{env.CACHE_KEY}}

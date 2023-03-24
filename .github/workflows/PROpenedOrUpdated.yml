@@ -99,5 +99,20 @@ jobs:
     needs: AsteriskGateMatrix
     steps:
       - name: Check test matrix status
-        if: ${{ needs.AsteriskGateMatrix.result != 'success' }}
-        run: exit 1
+        env:
+          RESULT: ${{ needs.AsteriskGateMatrix.result }}
+        run: |
+          case $RESULT in
+            success)
+              echo "::notice::All Testsuite tests passed"
+              exit 0
+              ;;
+            skipped)
+              echo "::notice::No Testsuite tests were required"
+              exit 0
+              ;;
+              *)
+              echo "::error::One or more Testsuite tests failed" 
+              exit 1
+          esac
+        
