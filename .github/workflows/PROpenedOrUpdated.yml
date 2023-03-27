@@ -1,5 +1,5 @@
 name: PROpenedOrUpdated
-run-name: "PR ${{github.event.number}} : Opened, reopened or updated by ${{ github.actor }}"
+run-name: "PR ${{github.event.number}} ${{github.event.action}} by ${{ github.actor }}"
 on:
 #  workflow_dispatch:
   pull_request_target:
@@ -96,7 +96,7 @@ jobs:
         with:
           asterisk-repo:     ${{env.ASTERISK_REPO}}
           pr-number:         ${{env.PR_NUMBER}}
-          pr-number:         ${{env.PR_COMMIT}}
+          pr-commit:         ${{env.PR_COMMIT}}
           base-branch:       ${{env.BRANCH}}
           github-token:      ${{secrets.GITHUB_TOKEN}}
           testsuite-repo:    ${{vars.TESTSUITE_REPO}}
