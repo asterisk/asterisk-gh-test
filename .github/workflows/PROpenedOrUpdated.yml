@@ -6,7 +6,13 @@ on:
     types: [opened, reopened, synchronize]
 
 env:
-  CACHE_KEY: PR:${{ github.event.number }}-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
+  CACHE_KEY:         PR:${{github.event.number}}-RUN:${{github.run_number}}-RID:${{github.run_id}}
+  ASTERISK_REPO:     ${{github.repository}}
+  PR_NUMBER:         ${{github.event.number}}
+  PR_COMMIT:         ${{github.event.pull_request.head.sha}}
+  BRANCH:            ${{github.event.pull_request.base.ref}}
+  GITHUB_TOKEN:      ${{secrets.GITHUB_TOKEN}}
+  MODULES_BLACKLIST: ${{vars.GATETEST_MODULES_BLACKLIST}} ${{vars.UNITTEST_MODULES_BLACKLIST}}
 
 jobs:
   BuildAndCacheAsterisk:
@@ -21,11 +27,11 @@ jobs:
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
           to-cache-key:      ${{env.CACHE_KEY}}
-          asterisk-repo:     ${{ github.repository }}
-          pr-number:         ${{ github.event.number }}
-          base-branch:       ${{ github.event.pull_request.base.ref }}
-          github-token:      ${{ secrets.GITHUB_TOKEN }}
-          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }} ${{ vars.UNITTEST_MODULES_BLACKLIST }}
+          asterisk-repo:     ${{env.ASTERISK_REPO}}
+          pr-number:         ${{env.PR_NUMBER}}
+          base-branch:       ${{env.BRANCH}}
+          github-token:      ${{secrets.GITHUB_TOKEN}}
+          modules-blacklist: ${{env.MODULES_BLACKLIST}}
 
   AsteriskUnitTests:
     runs-on: ubuntu-latest
@@ -33,40 +39,42 @@ jobs:
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
+      - name: Install Asterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key:   ${{env.CACHE_KEY}}
+          base-branch:      ${{env.BRANCH}}
+
       - name: Run Unit Tests
         uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
         with:
-          cache-key:        ${{ env.CACHE_KEY }}
-          asterisk-repo:    ${{ github.repository }}
-          pr-number:        ${{ github.event.number }}
-          pr-commit:        ${{ github.event.pull_request.head.sha }}
-          base-branch:      ${{ github.event.pull_request.base.ref }}
-          github-token:     ${{ secrets.GITHUB_TOKEN }}
-          unittest-command: ${{ vars.UNITTEST_COMMAND }}
-          modules-blacklist: ${{ vars.UNITTEST_MODULES_BLACKLIST }}
+          asterisk-repo:    ${{env.ASTERISK_REPO}}
+          pr-number:        ${{env.PR_NUMBER}}
+          base-branch:      ${{env.BRANCH}}
+          github-token:     ${{secrets.GITHUB_TOKEN}}
+          unittest-command: ${{vars.UNITTEST_COMMAND}}
 
-      - name: Get Token
+      - name: Get Token needed to add reviewers
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@v1
         with:
-          application_id: ${{ secrets.ASTERISK_ORG_ACCESS_APP_ID }}
-          application_private_key: ${{ secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY }}
+          application_id: ${{secrets.ASTERISK_ORG_ACCESS_APP_ID}}
+          application_private_key: ${{secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY}}
           organization: asterisk
 
       - name: Add Reviewers
         if: ${{ success() }}
         env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-          PR_NUMBER: ${{ github.event.number }}
-          REVIEWERS: ${{ vars.PR_REVIEWERS }}
+          GITHUB_TOKEN: ${{steps.get_workflow_token.outputs.token}}
+          GH_TOKEN: ${{steps.get_workflow_token.outputs.token}}
+          REVIEWERS: ${{vars.PR_REVIEWERS}}
         run: |
           IFS=$'; \n'
           for r in $REVIEWERS ; do
             gh pr edit $PR_NUMBER --add-reviewer $r
           done
 
-  AsteriskGateMatrix:
+  AsteriskGateTestMatrix:
     needs: AsteriskUnitTests
     continue-on-error: true
     strategy:
@@ -77,18 +85,23 @@ jobs:
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
+      - name: Install Asterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          from-cache-key: ${{env.CACHE_KEY}}
+          base-branch: ${{env.BRANCH}}
+    
       - name: Run Gate Tests for group ${{ matrix.group }}
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
-          asterisk-repo:     ${{ github.repository }}
-          pr-number:         ${{ github.event.number }}
-          pr-commit:         ${{ github.event.pull_request.head.sha }}
-          base-branch:       ${{ github.event.pull_request.base.ref }}
-          github-token:      ${{ secrets.GITHUB_TOKEN }}
-          modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }}
-          testsuite-repo:    ${{ vars.TESTSUITE_REPO }}
-          gatetest-group:    ${{ matrix.group }}
-          gatetest-commands: ${{ vars.GATETEST_COMMANDS }} 
+          asterisk-repo:     ${{env.ASTERISK_REPO}}
+          pr-number:         ${{env.PR_NUMBER}}
+          pr-number:         ${{env.PR_COMMIT}}
+          base-branch:       ${{env.BRANCH}}
+          github-token:      ${{secrets.GITHUB_TOKEN}}
+          testsuite-repo:    ${{vars.TESTSUITE_REPO}}
+          gatetest-group:    ${{matrix.group}}
+          gatetest-commands: ${{vars.GATETEST_COMMANDS}} 
 
   AsteriskGateTests:
     name: AsteriskGateTests

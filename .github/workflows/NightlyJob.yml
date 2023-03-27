@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Check test matrix status
         env:
-          RESULT: ${{ needs.AsteriskGateMatrix.result }}
+          RESULT: ${{ needs.AsteriskNightlyTestMatrix.result }}
         run: |
           case $RESULT in
             success)
