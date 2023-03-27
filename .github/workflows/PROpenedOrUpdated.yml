@@ -17,14 +17,13 @@ jobs:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
 
-      - name: Build and Cache Asterisk
-        uses: asterisk/asterisk-ci-actions/BuildAndCacheAsterisk@main
+      - name: GetAsterisk
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
-          cache-key:         ${{ env.CACHE_KEY }}
+          to-cache-key:      ${{env.CACHE_KEY}}
           asterisk-repo:     ${{ github.repository }}
           pr-number:         ${{ github.event.number }}
-          pr-commit:        ${{ github.event.pull_request.head.sha }}
-          base-branch:      ${{ github.event.pull_request.base.ref }}
+          base-branch:       ${{ github.event.pull_request.base.ref }}
           github-token:      ${{ secrets.GITHUB_TOKEN }}
           modules-blacklist: ${{ vars.GATETEST_MODULES_BLACKLIST }} ${{ vars.UNITTEST_MODULES_BLACKLIST }}
 
@@ -81,7 +80,6 @@ jobs:
       - name: Run Gate Tests for group ${{ matrix.group }}
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
-          cache-key:         ${{ env.CACHE_KEY }}
           asterisk-repo:     ${{ github.repository }}
           pr-number:         ${{ github.event.number }}
           pr-commit:         ${{ github.event.pull_request.head.sha }}

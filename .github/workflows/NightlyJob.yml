@@ -8,7 +8,27 @@ env:
   CACHE_KEY: Nightly-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
 
 jobs:
+  AsteriskNightlyBuildMatrix:
+    continue-on-error: false
+    strategy:
+      fail-fast: true
+      matrix:
+        branch: ${{ fromJSON(vars.NIGHTLYTEST_BRANCHES) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    steps:
+      - name: Build Asterisk for branch ${{ matrix.branch }}
+        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+        with:
+          to-cache-key: ${{env.CACHE_KEY}}-${{ matrix.branch }}
+          base-branch: ${{ matrix.branch }}
+          modules-blacklist: ${{ vars.NIGHTLYTEST_MODULES_BLACKLIST }}
+
   AsteriskNightlyMatrix:
+    name: AsteriskNightlyMatrix
+    if: ${{ success() }}
+    needs: AsteriskNightlyBuildMatrix
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -19,10 +39,10 @@ jobs:
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-      - name: Build Asterisk for branch ${{ matrix.branch }}
+      - name: Install Asterisk for branch ${{ matrix.branch }}
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
-#         to-cache-key: ${{env.CACHE_KEY}}
+          from-cache-key: ${{env.CACHE_KEY}}-${{ matrix.branch }}
           base-branch: ${{ matrix.branch }}
           modules-blacklist: ${{ vars.NIGHTLYTEST_MODULES_BLACKLIST }}
 
