@@ -79,3 +79,14 @@ jobs:
               echo "::error::One or more Testsuite tests failed" 
               exit 1
           esac
+
+  DeleteCache:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: AsteriskNightlyTests
+    steps:
+      - name: DeleteCache
+        uses: snnaplab/delete-branch-cache-action@v1
+        with:
+          ref: refs/heads/master
+          key: ${{env.CACHE_KEY}}
