@@ -70,6 +70,7 @@ jobs:
           asterisk-repo:     ${{env.ASTERISK_REPO}}
           pr-number:         ${{env.PR_NUMBER}}
           base-branch:       ${{matrix.branch}}
+          is-cherry-pick:    true
           github-token:      ${{secrets.GITHUB_TOKEN}}
           modules-blacklist: ${{env.MODULES_BLACKLIST}}
 
