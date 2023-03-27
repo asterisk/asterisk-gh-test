@@ -145,8 +145,8 @@ jobs:
               exit 0
               ;;
             skipped)
-              echo "::notice::No tests were required"
-              exit 0
+              echo "::notice::Unit tests were skipped because of an earlier failure"
+              exit 1
               ;;
               *)
               echo "::error::One or more tests failed" 
@@ -197,8 +197,8 @@ jobs:
               exit 0
               ;;
             skipped)
-              echo "::notice::No Testsuite tests were required"
-              exit 0
+              echo "::notice::Testsuite tests were skipped because of an earlier failure"
+              exit 1
               ;;
               *)
               echo "::error::One or more Testsuite tests failed" 
