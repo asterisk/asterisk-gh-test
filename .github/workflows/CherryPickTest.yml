@@ -45,6 +45,7 @@ jobs:
           done
           json+="]"
           echo "branches=$json" >> "$GITHUB_OUTPUT"
+          echo "IDENTIFIED_BRANCHES=$json" >> "$GITHUB_ENV"
           if [ $branch_count -eq 0 ] ; then
             echo "::notice::No branches needing cherry picks identified"
           else
@@ -58,12 +59,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-      - name: Build Asterisk for branch ${{matrix.branch}}
+      - name: Building and Saving Asterisk for branch ${{matrix.branch}}
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
           to-cache-key:      ${{env.CACHE_KEY}}-${{matrix.branch}}
@@ -103,12 +104,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-      - name: Install Asterisk for branch ${{ matrix.branch }}
+      - name: Restoring Asterisk from cache for branch ${{ matrix.branch }}
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
           from-cache-key: ${{env.CACHE_KEY}}-${{matrix.branch}}
@@ -154,7 +155,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
         group: ${{ fromJSON(vars.GATETEST_LIST) }}
     runs-on: ubuntu-latest
     container:
