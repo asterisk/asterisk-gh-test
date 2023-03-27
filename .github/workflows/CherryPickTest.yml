@@ -1,9 +1,14 @@
+# This workflow checks that a PR can be cherry-picked
+# to the desired branches.  Here's how...
+#
+# 1.  
+
 name: CherryPickTest
 run-name: "Cherry-Pick Tests for PR ${{github.event.number}}"
 on:
   pull_request_target:
     types: [ labeled ]
-
+  
 env:
   CACHE_KEY:         PR:${{ github.event.number }}-RUN:${{ github.run_number }}-RID:${{ github.run_id }}
   ASTERISK_REPO:     ${{ github.repository }}
@@ -132,7 +137,7 @@ jobs:
     steps:
       - name: Check unit test matrix status
         env:
-          RESULT: ${{needs.AsteriskUnixTestMatrix.result}}
+          RESULT: ${{needs.AsteriskUnitTestMatrix.result}}
         run: |
           case $RESULT in
             success)
