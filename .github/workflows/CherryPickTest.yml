@@ -59,7 +59,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
+        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -99,12 +99,12 @@ jobs:
           esac
 
   AsteriskUnitTestMatrix:
-    needs: AsteriskBuilds
+    needs: [ IdentifyBranches, AsteriskBuilds ]
     continue-on-error: false
     strategy:
       fail-fast: true
       matrix:
-        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
+        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -149,13 +149,13 @@ jobs:
           esac
 
   AsteriskGateTestMatrix:
-    needs: AsteriskUnitTests
+    needs: [ IdentifyBranches, AsteriskUnitTests ]
     if: ${{ success() }}
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(env.IDENTIFIED_BRANCHES) }}
+        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
         group: ${{ fromJSON(vars.GATETEST_LIST) }}
     runs-on: ubuntu-latest
     container:
