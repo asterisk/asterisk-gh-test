@@ -28,9 +28,9 @@ jobs:
         id: getbranches
         run: |
           # remove the label first
-          gh pr edit --remove-label ${{vars.CHERRY_PICK_TEST_LABEL}} ${PR_NUMBER}
+          gh pr edit --repo ${ASTERISK_REPO} --remove-label ${{vars.CHERRY_PICK_TEST_LABEL}} ${PR_NUMBER}
           # now scan the comments
-          branchlist=$(gh api /repos/${REPO}/issues/${PR_NUMBER}/comments \
+          branchlist=$(gh api /repos/${ASTERISK_REPO}/issues/${PR_NUMBER}/comments \
             --jq '.[].body | match("${{ vars.CHERRY_PICK_REGEX }}"; "g") | .captures[0].string' | tr '\n' ' ')
           echo $branchlist
           eval declare -a BRANCHES=( $branchlist )
