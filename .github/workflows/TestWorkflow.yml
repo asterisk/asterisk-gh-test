@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   
 env:
-  CACHE_KEY: PR:123-RUN:456-RID:789
+  CACHE_KEY: PR:123-RUN:456-RID:101112
   
 jobs:
   TestWorkflow:
@@ -38,10 +38,15 @@ jobs:
           base-branch: master
           modules-blacklist: codec_ilbc test_crypto
 
-      - name: RunUnitTests
-        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+      - name: Run Gate Tests for branch master
+        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
-          base-branch: master
+          asterisk-repo:     ${{env.ASTERISK_REPO}}
+          base-branch:       master
+          github-token:      ${{secrets.GITHUB_TOKEN}}
+          testsuite-repo:    ${{vars.TESTSUITE_REPO}}
+          gatetest-group:    channels
+          gatetest-commands: ${{vars.GATETEST_COMMANDS}} 
 
   DeleteCache:
     runs-on: ubuntu-latest
