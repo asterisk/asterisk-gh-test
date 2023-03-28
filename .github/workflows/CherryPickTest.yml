@@ -176,6 +176,8 @@ jobs:
         uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
         with:
           asterisk-repo:     ${{env.ASTERISK_REPO}}
+          pr-number:         ${{env.PR_NUMBER}}
+          pr-commit:         ${{env.PR_COMMIT}}
           base-branch:       ${{matrix.branch}}
           github-token:      ${{secrets.GITHUB_TOKEN}}
           testsuite-repo:    ${{vars.TESTSUITE_REPO}}
