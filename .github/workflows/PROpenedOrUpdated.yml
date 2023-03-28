@@ -15,7 +15,7 @@ env:
   MODULES_BLACKLIST: ${{vars.GATETEST_MODULES_BLACKLIST}} ${{vars.UNITTEST_MODULES_BLACKLIST}}
 
 jobs:
-  BuildAndCacheAsterisk:
+  AsteriskBuilds:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
