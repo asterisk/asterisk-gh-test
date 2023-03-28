@@ -1,7 +1,3 @@
-===============================================================================
-===                       Asterisk Add-on Modules                           ===
-===============================================================================
-
     This document pertains to the modules that reside in the addons/
 subdirectory of the source tree.  By default, these modules are not compiled
 and installed.  If you choose to enable them, you must be aware of what
