@@ -1,6 +1,3 @@
-=========================================================
-=== Information for upgrading from Zaptel to DAHDI    ===
-=========================================================
 
 As announced in early 2008, Digium is renaming the Zaptel telephony
 interface project to DAHDI (Digium Asterisk Hardware Device Interface)
