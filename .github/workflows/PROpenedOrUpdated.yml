@@ -35,7 +35,7 @@ jobs:
 
   AsteriskUnitTests:
     runs-on: ubuntu-latest
-    needs: BuildAndCacheAsterisk
+    needs: AsteriskBuilds
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
