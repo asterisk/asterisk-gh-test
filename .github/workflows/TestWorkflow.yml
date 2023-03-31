@@ -16,35 +16,6 @@ jobs:
       - name: SetupIPV6
         uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
 
-      - name: Get Asterisk
-        uses: asterisk/asterisk-ci-actions/GetAsterisk@main
-        with:
-          asterisk_repo:     ${{env.ASTERISK_REPO}}
-          base_branch:       ${{env.BRANCH}}
-          github_token:      ${{secrets.GITHUB_TOKEN}}
-          modules_blacklist: ${{env.MODULES_BLACKLIST}}
+      - name: Test Action
+        uses: asterisk/asterisk-ci-actions/TestAction@main
 
-      - name: Debug Output
-        run: |
-          ls -al
-          ls -al cache/output/
-
-      - name: Run Gate Tests
-        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
-        with:
-          asterisk_repo:    ${{env.ASTERISK_REPO}}
-          pr_number:        ${{env.PR_NUMBER}}
-          base_branch:      ${{env.BRANCH}}
-          github_token:     ${{secrets.GITHUB_TOKEN}}
-          testsuite_repo:    ${{vars.TESTSUITE_REPO}}
-          gatetest_group:    ari1_mwi
-          gatetest_commands: ${{vars.GATETEST_COMMANDS}} 
-          
-#
-#      - name: Save Output
-#        id: save-output
-#        if: ${{ always() }}
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: Unit Test Output
-#          path: cache/output
