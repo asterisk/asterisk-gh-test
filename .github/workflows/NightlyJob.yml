@@ -28,6 +28,7 @@ jobs:
           asterisk_repo:     ${{env.ASTERISK_REPO}}
           pr_number:         ${{env.PR_NUMBER}}
           base_branch:       ${{matrix.branch}}
+          modules_blacklist: ${{env.MODULES_BLACKLIST}}
           github_token:      ${{secrets.GITHUB_TOKEN}}
           testsuite_repo:    ${{vars.TESTSUITE_REPO}}
           gatetest_group:    ${{matrix.group}}
