@@ -51,6 +51,8 @@ jobs:
           check_name: Unit Test Results
           files: cache/output/*.xml
           comment_mode: always
+          compare_to_earlier_commit: false
+          report_individual_runs: true
           action_fail: true
         env:
           GITHUB_REPOSITORY: ${{env.ASTERISK_REPO}}
@@ -118,9 +120,12 @@ jobs:
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2.4.2
         with:
-          check_name: Unit Test Results
+          check_name: Gate Test Results
+          comment_title: Gate Test Results for ${{matrix.group}}
           files: testsuite/*.xml
           comment_mode: always
+          compare_to_earlier_commit: false
+          report_individual_runs: true
           action_fail: true
         env:
           GITHUB_REPOSITORY: ${{env.ASTERISK_REPO}}
@@ -141,7 +146,7 @@ jobs:
               exit 0
               ;;
             skipped)
-              echo "::notice::No Testsuite were run but there should have been"
+              echo "::error::Testsuite tests were skipped because of an earlier failure"
               exit 1
               ;;
               *)
