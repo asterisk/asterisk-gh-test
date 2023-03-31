@@ -65,6 +65,9 @@ jobs:
         branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
     runs-on: ubuntu-latest
     steps:
+      - name: SetupIPV6
+        uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
+
       - name: Install Asterisk
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
@@ -141,6 +144,9 @@ jobs:
         group: ${{ fromJSON(vars.GATETEST_LIST) }}
     runs-on: ubuntu-latest
     steps:
+      - name: SetupIPV6
+        uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
+
       - name: Install Asterisk
         uses: asterisk/asterisk-ci-actions/GetAsterisk@main
         with:
