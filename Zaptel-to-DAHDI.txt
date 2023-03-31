@@ -1,8 +1,4 @@
 
-This version of Asterisk can only be built using DAHDI, and as a
-result there are number of changes that will be visible to previous
-users of Asterisk with Zaptel.
-
 First, the modules that directly use services from DAHDI have been
 renamed; the new names are:
 
