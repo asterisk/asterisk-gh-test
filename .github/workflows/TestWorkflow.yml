@@ -3,19 +3,57 @@ run-name: "Test workflow started by ${{ github.actor }}"
 on:
   workflow_dispatch:
 
-env:
-  ASTERISK_REPO:     ${{github.repository}}
-  BRANCH:            master
-  GITHUB_TOKEN:      ${{secrets.GITHUB_TOKEN}}
-  MODULES_BLACKLIST: ${{vars.GATETEST_MODULES_BLACKLIST}} ${{vars.UNITTEST_MODULES_BLACKLIST}}
-
 jobs:
-  AsteriskBuilds:
+  TestJobs:
     runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['all_pass','pass_fail']
+    outputs:
+      xresult: ${{steps.runtest.outputs.result}}
     steps:
-      - name: SetupIPV6
-        uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
+      - name: Tester
+        id: runtest
+        env:
+          GROUP: ${{matrix.group}}
+        run: |
+          if [ "${GROUP}" == "pass_fail" ] ; then
+            echo "Exiting with RC 1 (forced)"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "Exiting with RC 0 (forced)"
+          sleep 10
+          echo "result=success" >> $GITHUB_OUTPUT
+          exit 0
 
-      - name: Test Action
-        uses: asterisk/asterisk-ci-actions/TestAction@main
+  TestResults:
+    name: TestResults
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [TestJobs]
+    steps:
+      - name: Check test matrix status
+        env:
+          RESULT: ${{ needs.TestJobs.result }}
+        run: |
+          echo "all xresults: ${{ toJSON(needs.*.xresult) }}"
+          echo "all results: ${{ toJSON(needs.*.result) }}"
+          echo "composite result: ${{ needs.TestJobs.result }}"
 
+          case $RESULT in
+            success)
+              echo "::notice::All Testsuite tests passed"
+              exit 0
+              ;;
+            skipped)
+              echo "::error::Testsuite tests were skipped because of an earlier failure"
+              exit 1
+              ;;
+              *)
+              echo "::error::One or more Testsuite tests failed"
+              exit 1
+          esac
+#          
