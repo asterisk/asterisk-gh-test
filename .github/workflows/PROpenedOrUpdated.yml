@@ -5,9 +5,9 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize]
 
-concurrency:
-  group: ${{github.workflow}}-${{github.event.number}}
-  cancel-in-progress: true
+#concurrency:
+#  group: ${{github.workflow}}-${{github.event.number}}
+#  cancel-in-progress: true
 
 env:
   ASTERISK_REPO:     ${{github.repository}}
@@ -74,26 +74,53 @@ jobs:
           gatetest_group:    ${{matrix.group}}
           gatetest_commands: ${{vars.GATETEST_COMMANDS}}
 
-  AsteriskGateTests:
+  AsteriskGateTestsFailed:
     name: AsteriskGateTests
-    if: ${{ always() }}
+    if: failure()
     runs-on: ubuntu-latest
     needs: AsteriskGate
     steps:
-      - name: Check test matrix status
-        env:
-          RESULT: ${{ needs.AsteriskGate.result }}
         run: |
-          case $RESULT in
-            success)
-              echo "::notice::All Testsuite tests passed"
-              exit 0
-              ;;
-            skipped)
-              echo "::error::Testsuite tests were skipped because of an earlier failure"
-              exit 1
-              ;;
-              *)
-              echo "::error::One or more Testsuite tests failed"
-              exit 1
-          esac
+          exit 1
+
+  AsteriskGateTestsPassed:
+    name: AsteriskGateTests
+    if: success()
+    runs-on: ubuntu-latest
+    needs: AsteriskGate
+    steps:
+        run: |
+          exit 0
+
+  AsteriskGateTestsCancelled:
+    name: AsteriskGateTests
+    if: cacnelled()
+    runs-on: ubuntu-latest
+    needs: AsteriskGate
+    steps:
+        run: |
+          exit 1
+
+#  AsteriskGateTests:
+#    name: AsteriskGateTests
+#    if: always()
+#    runs-on: ubuntu-latest
+#    needs: AsteriskGate
+#    steps:
+#      - name: Check test matrix status
+#        env:
+#          RESULT: ${{ needs.AsteriskGate.result }}
+#        run: |
+#          case $RESULT in
+#            success)
+#              echo "::notice::All Testsuite tests passed"
+#              exit 0
+#              ;;
+#            skipped)
+#              echo "::error::Testsuite tests were skipped because of an earlier failure"
+#              exit 1
+#              ;;
+#              *)
+#              echo "::error::One or more Testsuite tests failed"
+#              exit 1
+#          esac
