@@ -1,4 +1,4 @@
-#
+##
 # Asterisk -- An open source telephony toolkit.
 #
 # Top level Makefile
