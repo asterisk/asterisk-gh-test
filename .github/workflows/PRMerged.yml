@@ -35,6 +35,7 @@ jobs:
     outputs:
       branches:     ${{ steps.getbranches.outputs.branches }}
       branch_count: ${{ steps.getbranches.outputs.branch_count }}
+      github_token: ${{steps.get_workflow_token.outputs.token}}
     runs-on: ubuntu-latest
     steps:
       - name: Get cherry-pick branches
@@ -45,6 +46,13 @@ jobs:
           pr_number:         ${{env.PR_NUMBER}}
           cherry_pick_regex: ${{vars.CHERRY_PICK_REGEX}}
           github_token:      ${{env.GITHUB_TOKEN}}
+      - name: Get Token needed to push commits
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{secrets.ASTERISK_ORG_ACCESS_APP_ID}}
+          application_private_key: ${{secrets.ASTERISK_ORG_ACCESS_APP_PRIV_KEY}}
+          organization: asterisk
 
   MergeCherryPicks:
     needs: [ IdentifyBranches ]
@@ -56,11 +64,11 @@ jobs:
         branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
     runs-on: ubuntu-latest
     steps:
+    
       - name: Cherry Pick PR ${{env.PR_NUMBER}} to branch ${{matrix.branch}}
         uses: asterisk/asterisk-ci-actions/CherryPick@main
         with:
           repo:              ${{env.REPO}}
           pr_number:         ${{env.PR_NUMBER}}
           branch:            ${{matrix.branch}}
-          github_token:      ${{env.GITHUB_TOKEN}}
-
+          github_token:      ${{needs.IdentifyBranches.outputs.github_token}}
