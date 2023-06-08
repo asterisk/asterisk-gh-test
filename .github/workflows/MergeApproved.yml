@@ -20,11 +20,6 @@ jobs:
       branch_count: ${{ steps.getbranches.outputs.branch_count }}
     runs-on: ubuntu-latest
     steps:
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          action-vars: ${{toJSON(vars)}}
-
       - name: Remove Trigger Label, Add InProgress Label
         env:
           GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
