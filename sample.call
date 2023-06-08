@@ -1,19 +1,6 @@
 # Obviously, you MUST specify at least a channel in the same format as you
 # would for the "Dial" application.  Only one channel name is permitted.
 #
-Channel: DAHDI/1
-#
-# You can specify codecs for the call
-Codecs: alaw, speex, h264
-#
-# You may also specify a wait time (default is 45 seconds) for how long to
-# wait for the channel to be answered, a retry time (default is 5 mins)
-# for how soon to retry this call, and a maximum number of retries (default
-# is 0) for how many times to retry this call.
-#
-MaxRetries: 2
-RetryTime: 60
-WaitTime: 30
 
 #
 # Once the call is answered, you must provide either an application/data
