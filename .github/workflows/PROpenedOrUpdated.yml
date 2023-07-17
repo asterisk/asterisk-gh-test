@@ -18,6 +18,10 @@ jobs:
   PROpenUpdateUnitTests:
     runs-on: ubuntu-latest
     steps:
+      - name: Sleep
+        run: |
+          sleep 30
+
       - name: Get Token needed to add reviewers
         if: github.event.action == 'opened'
         id: get_workflow_token
@@ -35,6 +39,11 @@ jobs:
           pr_number:               ${{env.PR_NUMBER}}
           cherry_pick_regex:       ${{vars.CHERRY_PICK_REGEX}}
           github_token:            ${{secrets.GITHUB_TOKEN}}
+
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+        with:
+          action-vars: ${{toJSON(steps.getbranches.outputs)}}
 
       - name: Add cherry-pick reminder
         if: ${{ steps.getbranches.outputs.branch_count == 0 || steps.getbranches.outputs.forced_none != 'true' }}
