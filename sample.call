@@ -1,15 +1,4 @@
 #
-# This is a sample file that can be dumped in /var/spool/asterisk/outgoing
-# to generate a call.  For Asterisk to read call files, you must have the
-# pbx_spool.so module loaded.
-#
-# Comments are indicated by a '#' character that begins a line, or follows
-# a space or tab character.  To be consistent with the configuration files
-# in Asterisk, comments can also be indicated by a semicolon.  However, the
-# multiline comments (;-- --;) used in Asterisk configuration files are not
-# supported.  Semicolons can be escaped by a backslash.
-#
-
 # Obviously, you MUST specify at least a channel in the same format as you
 # would for the "Dial" application.  Only one channel name is permitted.
 #
@@ -81,3 +70,50 @@ Priority: 1
 # Completed, Expired or Failed.
 #
 #Archive: yes
+nreline
+nreline
+nreline
+nreline
+nreline
+nreline
+Fri Oct 13 12:06:29 PM MDT 2023
+Fri Oct 13 12:11:15 PM MDT 2023
+Fri Oct 13 12:47:15 PM MDT 2023
+Fri Oct 13 12:53:44 PM MDT 2023
+Fri Oct 13 01:02:07 PM MDT 2023
+Fri Oct 13 01:07:39 PM MDT 2023
+Fri Oct 13 01:08:24 PM MDT 2023
+Fri Oct 13 01:20:04 PM MDT 2023
+Fri Oct 13 02:14:53 PM MDT 2023
+Fri Oct 13 02:16:14 PM MDT 2023
+Fri Oct 13 02:18:36 PM MDT 2023
+Fri Oct 13 02:24:35 PM MDT 2023
+Fri Oct 13 03:55:27 PM MDT 2023
+Mon Oct 16 03:22:40 AM MDT 2023
+Mon Oct 16 03:27:37 AM MDT 2023
+Mon Oct 16 03:35:50 AM MDT 2023
+Mon Oct 16 03:38:02 AM MDT 2023
+Mon Oct 16 03:59:24 AM MDT 2023
+Mon Oct 16 04:00:20 AM MDT 2023
+Mon Oct 16 04:05:03 AM MDT 2023
+Mon Oct 16 11:05:05 AM MDT 2023
+Mon Oct 16 11:05:54 AM MDT 2023
+Mon Oct 16 11:12:30 AM MDT 2023
+Mon Oct 16 11:19:07 AM MDT 2023
+Mon Oct 16 11:22:52 AM MDT 2023
+Mon Oct 16 11:28:06 AM MDT 2023
+Mon Oct 16 11:29:19 AM MDT 2023
+Mon Oct 16 11:30:55 AM MDT 2023
+Mon Oct 16 11:31:54 AM MDT 2023
+Mon Oct 16 11:40:33 AM MDT 2023
+Mon Oct 16 11:41:32 AM MDT 2023
+Mon Oct 16 06:19:54 PM MDT 2023
+Tue Oct 17 05:55:19 AM MDT 2023
+Tue Oct 17 06:00:36 AM MDT 2023
+Tue Oct 17 06:02:31 AM MDT 2023
+Tue Oct 17 07:20:52 AM MDT 2023
+Tue Oct 17 07:32:48 AM MDT 2023
+Tue Oct 17 08:08:47 AM MDT 2023
+Tue Oct 17 08:18:16 AM MDT 2023
+Tue Oct 17 08:34:23 AM MDT 2023
+Tue Oct 17 08:37:29 AM MDT 2023
