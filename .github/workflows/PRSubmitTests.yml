@@ -20,7 +20,7 @@ jobs:
 # the "Action Variables" ('vars' context) so we need to retrieve control
 # data 
 #
-  PRSControlData:
+  PRSGetControlData:
     runs-on: ubuntu-latest
     outputs:
       control_data:  ${{ steps.setvars.outputs.control_data }}
@@ -29,71 +29,84 @@ jobs:
         uses: asterisk/asterisk-ci-actions/GetRepoControlData@main
         with:
           repo: ${{ github.event.repository.name}}
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          action-inputs: ${{toJSON(inputs)}}
-          action-vars: ${{ toJSON(steps.setvars.outputs) }}
+#      - name: DumpEnvironment
+#        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+#        with:
+#          action-inputs: ${{toJSON(inputs)}}
+#          action-vars: ${{ toJSON(steps.setvars.outputs) }}
 
-#  PRSUnitTests:
-#    needs: PRSControlData
-#    runs-on: ubuntu-latest
-#    env:
-#      UNITTEST_COMMAND: ${{ fromJSON(needs.PRSControlData.outputs.control_data).UNITTEST_COMMAND }}
-#    steps:
-#      - name: Run Unit Tests
-#        uses: asterisk/asterisk-ci-actions/AsteriskUnitComposite@main
-#        with:
-#          asterisk_repo:     ${{env.ASTERISK_REPO}}
-#          pr_number:         ${{env.PR_NUMBER}}
-#          base_branch:       ${{env.BRANCH}}
-#          unittest_command:  ${{env.UNITTEST_COMMAND}}
-#
-#  PRSGateTestMatrix:
-#    needs: [PRSControlData,PRSUnitTests]
-#    env:
-#      TESTSUITE_REPO:    "${{ fromJSON(needs.PRSGetControlData.outputs.control_data).TESTSUITE_REPO }}"
-#      GATETEST_COMMANDS: "${{ fromJSON(needs.PRSGetControlData.outputs.control_data).GATETEST_COMMANDS }}"
-#    continue-on-error: false
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        group: ${{ fromJSON(fromJSON(needs.PRSGetControlData.outputs.control_data).GATETEST_LIST) }}
-#    runs-on: ubuntu-latest
-#    steps:
-#      - id: runtest
-#        name: Run Gate Tests for ${{ matrix.group }}
-#        uses: asterisk/asterisk-ci-actions/AsteriskGateComposite@main
-#        with:
-#          test_type:         Gate
-#          asterisk_repo:     ${{env.ASTERISK_REPO}}
-#          pr_number:         ${{env.PR_NUMBER}}
-#          base_branch:       ${{env.BRANCH}}
-#          testsuite_repo:    ${{env.TESTSUITE_REPO}}
-#          gatetest_group:    ${{matrix.group}}
-#          gatetest_commands: ${{env.GATETEST_COMMANDS}}
-#
-#  PRSGateTests:
-#    if: always()
-#    runs-on: ubuntu-latest
-#    needs: PRSGateTestMatrix
-#    steps:
-#      - name: Check test matrix status
-#        env:
-#          RESULT: ${{ needs.PRSGateTestMatrix.result }}
-#        run: |
-#          echo "all results: ${{ toJSON(needs.*.result) }}"
-#          echo "composite result: $RESULT"
-#          case $RESULT in
-#            success)
-#              echo "::notice::All Testsuite tests passed"
-#              exit 0
-#              ;;
-#            skipped)
-#              echo "::error::Testsuite tests were skipped because of an earlier failure"
-#              exit 1
-#              ;;
-#            *)
-#              echo "::error::One or more Testsuite tests failed ($RESULT)"
-#              exit 1
-#          esac
+  PRSUnitTests:
+    needs: PRSGetControlData
+    runs-on: ubuntu-latest
+    env:
+      UNITTEST_COMMAND: ${{ fromJSON(needs.PRSGetControlData.outputs.control_data).UNITTEST_COMMAND }}
+    steps:
+      - name: Run Unit Tests
+        uses: asterisk/asterisk-ci-actions/AsteriskUnitComposite@main
+        with:
+          asterisk_repo:     ${{env.ASTERISK_REPO}}
+          pr_number:         ${{env.PR_NUMBER}}
+          base_branch:       ${{env.BRANCH}}
+          unittest_command:  ${{env.UNITTEST_COMMAND}}
+
+  PRSGateTestMatrix:
+    needs: PRSGetControlData
+    env:
+      TESTSUITE_REPO:    "${{ fromJSON(needs.PRSGetControlData.outputs.control_data).TESTSUITE_REPO }}"
+      GATETEST_COMMANDS: "${{ fromJSON(needs.PRSGetControlData.outputs.control_data).GATETEST_COMMANDS }}"
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(fromJSON(needs.PRSGetControlData.outputs.control_data).GATETEST_LIST) }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: runtest
+        name: Run Gate Tests for ${{ matrix.group }}
+        uses: asterisk/asterisk-ci-actions/AsteriskGateComposite@main
+        with:
+          test_type:         Gate
+          asterisk_repo:     ${{env.ASTERISK_REPO}}
+          pr_number:         ${{env.PR_NUMBER}}
+          base_branch:       ${{env.BRANCH}}
+          testsuite_repo:    ${{env.TESTSUITE_REPO}}
+          gatetest_group:    ${{matrix.group}}
+          gatetest_commands: ${{env.GATETEST_COMMANDS}}
+
+  PRSResults:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [PRSUnitTests,PRSGateTestMatrix]
+    steps:
+      - name: Check test matrix status
+        env:
+          RESULT_UNIT: ${{ needs.PRSUnitTests.result }}
+          RESULT_GATE: ${{ needs.PRSGateTestMatrix.result }}
+        run: |
+          declare -i rc=0
+          echo "all results: ${{ toJSON(needs.*.result) }}"
+          case $RESULT_UNIT in
+            success)
+              echo "::notice::Unit tests passed"
+              ;;
+            skipped)
+              echo "::error::Unit tests were skipped because of an earlier failure"
+              rc+=1
+              ;;
+            *)
+              echo "::error::One or more unit tests failed ($RESULT_UNIT)"
+              rc+=1
+          esac
+          case $RESULT_GATE
+            success)
+              echo "::notice::Gate tests passed"
+              ;;
+            skipped)
+              echo "::error::Gate tests were skipped because of an earlier failure"
+              rc+=1
+              ;;
+            *)
+              echo "::error::One or more gate tests failed ($RESULT_GATE)"
+              rc+=1
+          esac
+          exit $rc
