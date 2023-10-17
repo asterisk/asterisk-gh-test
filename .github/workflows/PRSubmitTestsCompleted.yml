@@ -10,6 +10,8 @@ jobs:
   PRSubmitTestsCompleted:
     runs-on: ubuntu-latest
     steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
       - name: 'Set Label'
         uses: actions/github-script@v6
         env:
