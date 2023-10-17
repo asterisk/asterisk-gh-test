@@ -97,7 +97,7 @@ jobs:
               echo "::error::One or more unit tests failed ($RESULT_UNIT)"
               rc+=1
           esac
-          case $RESULT_GATE
+          case $RESULT_GATE in
             success)
               echo "::notice::Gate tests passed"
               ;;
@@ -109,4 +109,5 @@ jobs:
               echo "::error::One or more gate tests failed ($RESULT_GATE)"
               rc+=1
           esac
+          echo "::notice::Final result code: $rc"
           exit $rc
