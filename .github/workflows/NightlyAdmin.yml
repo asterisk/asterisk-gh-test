@@ -6,4 +6,6 @@ on:
 
 jobs:
   CloseStaleIssues:
-    uses: asterisk/asterisk-ci-actions/.github/workflows/CloseStaleIssuesAndPRs.yml@main-close-stale
+    uses: asterisk/asterisk-ci-actions/.github/workflows/CloseStaleIssuesAndPRs.yml@main
+    secrets:
+      ASTERISKTEAM_PAT: ${{ secrets.ASTERISKTEAM_PAT }}
