@@ -1,4 +1,4 @@
-name: OnPRLabeled
+name: PRLabeled
 run-name: "${{github.workflow}}-${{github.event.label.name}}-${{github.event.number}}"
 on:
   pull_request_target:
