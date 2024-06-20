@@ -12,17 +12,7 @@ jobs:
   PRCheck:
     name: PRCheck
     if: ${{ github.event.label.name == vars.RECHECKPR_LABEL }}
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
-    with:
-      test_type:         prrecheck
-      asterisk_repo:     ${{github.repository}}
-      pr_number:         ${{github.event.number}}
-      base_branch:       ${{github.event.pull_request.base.ref}}
-      build_options:     ${{vars.BUILD_OPTIONS}}
-      unittest_command:  ${{vars.UNITTEST_COMMAND}}
-      testsuite_repo:    ${{vars.TESTSUITE_REPO}}
-      gatetest_list:     ${{vars.GATETEST_LIST}}
-      gatetest_commands: ${{vars.GATETEST_COMMANDS}}
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskRecheckPR.yml@main
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
       

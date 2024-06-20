@@ -2,7 +2,7 @@ name: PRPostCheckActions
 run-name: "PRPostCheckActions ${{github.event.workflow.name}} ${{github.event.action}}"
 on:
   workflow_run:
-    workflows: [PRStateChanged,PRRecheck]
+    workflows: [PRStateChanged]
     types:
       - in_progress
       - completed
@@ -51,7 +51,7 @@ jobs:
           retries: 5
           script: |
             let label;
-            if (process.env.ACTION === 'requested') {
+            if (process.env.ACTION === 'in_progress') {
               label = process.env.LABEL_TIP;
             } else {
               if ( process.env.CONCLUSION === 'success' ) {
