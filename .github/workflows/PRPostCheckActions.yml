@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [PRStateChanged,PRRecheck]
     types:
-      - requested
+      - in_progress
       - completed
 env:
   ACTION:     ${{ github.event.action }}
