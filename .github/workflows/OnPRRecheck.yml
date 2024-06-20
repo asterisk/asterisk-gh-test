@@ -1,0 +1,41 @@
+name: PRRecheck
+run-name: "PR ${{github.event.number}} PRRecheck"
+on:
+  pull_request_target:
+    types: [ labeled ]
+
+concurrency:
+  group: ${{github.workflow}}-${{github.event.label.name}}-${{github.event.number}}
+  cancel-in-progress: true
+
+jobs:
+  PRCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+      - name: TestStep
+        uses: actions/github-script@v7
+        with:
+          retries: 5
+          script: |
+            core.info(`TestStep`);
+            return;
+
+#  PRCheck:
+#    name: PRCheck
+#    if: ${{ github.event.label.name == vars.RECHECKPR_LABEL }}
+#    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
+#    with:
+#      test_type:         prrecheck
+#      asterisk_repo:     ${{github.repository}}
+#      pr_number:         ${{github.event.number}}
+#      base_branch:       ${{github.event.pull_request.base.ref}}
+#      build_options:     ${{vars.BUILD_OPTIONS}}
+#      unittest_command:  ${{vars.UNITTEST_COMMAND}}
+#      testsuite_repo:    ${{vars.TESTSUITE_REPO}}
+#      gatetest_list:     ${{vars.GATETEST_LIST}}
+#      gatetest_commands: ${{vars.GATETEST_COMMANDS}}
+#    secrets:
+#      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
