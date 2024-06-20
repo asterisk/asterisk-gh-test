@@ -13,6 +13,7 @@ env:
 
 jobs:
   PRPostCheckActions:
+    if: github.event.workflow_run.conclusion != 'skipped'
     runs-on: ubuntu-latest
     outputs:
       PR_NUMBER:     ${{ steps.getpr.outputs.PR_NUMBER }}
