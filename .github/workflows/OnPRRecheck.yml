@@ -1,5 +1,5 @@
-name: PRLabeled
-run-name: "${{github.workflow}}-${{github.event.label.name}}-${{github.event.number}}"
+name: PRRecheck
+run-name: "PR ${{github.event.number}} PRRecheck"
 on:
   pull_request_target:
     types: [ labeled ]
@@ -8,20 +8,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.event.label.name}}-${{github.event.number}}
   cancel-in-progress: true
 
-env:
-  PR_NUMBER:          ${{ github.event.number }}
-  MODULES_BLACKLIST:  ${{ vars.GATETEST_MODULES_BLACKLIST }} ${{ vars.UNITTEST_MODULES_BLACKLIST }}
-
 jobs:
-  AsteriskCherryPickTest:
-    name: CherryPickTest
-    if: ${{ github.event.label.name == vars.CHERRY_PICK_TEST_LABEL }}
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskCherryPickTest.yml@main
-    secrets:
-      TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  AsteriskRecheckPR:
-    name: Recheck
+  PRCheck:
+    name: PRCheck
     if: ${{ github.event.label.name == vars.RECHECKPR_LABEL }}
     uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
     with:

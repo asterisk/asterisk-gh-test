@@ -28,8 +28,8 @@ jobs:
         with:
           action-vars: ${{ toJSON(steps.setvars.outputs) }}
 
-  CheckPR:
-    name: CheckPR
+  PRCheck:
+    name: PRCheck
     needs: Setup
     uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
     with:
