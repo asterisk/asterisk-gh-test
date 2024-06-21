@@ -1,5 +1,5 @@
-name: PRTestCherryPick
-run-name: "PR ${{github.event.number}} PRTestCherryPick"
+name: PRCherryPickTest
+run-name: "PR ${{github.event.number}} PRCherryPickTest"
 on:
   pull_request_target:
     types: [ labeled ]
