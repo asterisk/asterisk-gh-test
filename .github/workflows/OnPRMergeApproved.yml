@@ -1,4 +1,4 @@
-name: PRMergeApproved
+name: MergePR
 run-name: "PR ${{github.event.number}} MergeApproved"
 on:
   pull_request_target:
@@ -12,7 +12,7 @@ jobs:
   MergePR:
     name: MergePR
     if: contains(fromJSON(vars.MERGE_APPROVED_LABELS), github.event.label.name)
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskMergePR.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskMergePR.yml@main-cache-builds
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
       application_id: ${{secrets.ASTERISK_ORG_ACCESS_APP_ID}}

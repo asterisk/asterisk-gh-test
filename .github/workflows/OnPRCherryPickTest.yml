@@ -1,4 +1,4 @@
-name: PRCherryPickTest
+name: CPTest
 run-name: "PR ${{github.event.number}} CherryPickTest"
 on:
   pull_request_target:
@@ -9,9 +9,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  CherryPickTest:
-    name: CherryPickTest
+  CPTest:
+    name: CPTest
     if: ${{ github.event.label.name == vars.CHERRY_PICK_TEST_LABEL }}
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskCherryPickTest.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskCherryPickTest.yml@main-cache-builds
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
