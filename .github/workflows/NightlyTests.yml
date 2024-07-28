@@ -11,12 +11,15 @@ on:
         type: string
         description: "Array of test groups to run: ['ari1','channels'].  Defaults to NIGHTLYTEST_LIST"
 
-#  schedule:
-#    - cron: '0 2 * * *'
+  schedule:
+    - cron: '0 2 * * *'
 
 jobs:
   NightlyTests:
     name: NightlyTests
-    uses: asterisk/asterisk-ci-actions/.github/workflows/TestCalledWorkflow.yml@main-cache-builds
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskNightlyTest.yml@main-cache-builds
+    with:
+      branches:   ${{ inputs.branches || vars.NIGHTLYTEST_BRANCHES }}
+      group_list: ${{ inputs.group_list || vars.NIGHTLYTEST_LIST }}
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}

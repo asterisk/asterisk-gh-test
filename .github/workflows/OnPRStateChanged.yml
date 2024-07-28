@@ -32,20 +32,20 @@ jobs:
       vars:  ${{ steps.setvars.outputs.control_data }}
       testsuite_test_pr:  ${{ steps.testsuitepr.outputs.testsuite_test_pr }}
     steps:
-      - id: wait
-        run: |
-          echo "::notice::Waiting for 2 minutes to give user a chance to add PR comments"
-          sleep 120
-          exit 0
+#      - id: wait
+#        run: |
+#          echo "::notice::Waiting for 2 minutes to give user a chance to add PR comments"
+#          sleep 120
+#          exit 0
       
       - id: setvars
-        uses: asterisk/asterisk-ci-actions/GetRepoControlData@main
+        uses: asterisk/asterisk-ci-actions/GetRepoControlData@main-cache-builds
         with:
           repo: ${{ github.event.repository.name}}
 
       - name: GetTestsuitePR
         id: testsuitepr
-        uses: asterisk/asterisk-ci-actions/GetTestsuitePRFromAsteriskPR@main
+        uses: asterisk/asterisk-ci-actions/GetTestsuitePRFromAsteriskPR@main-cache-builds
         with:
           repo:     ${{github.repository}}
           pr_number: ${{github.event.number}}
@@ -62,7 +62,7 @@ jobs:
   PRCheck:
     name: PRCheck
     needs: Setup
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main-cache-builds
     with:
       test_type:         prstatechange
       asterisk_repo:     ${{github.repository}}
