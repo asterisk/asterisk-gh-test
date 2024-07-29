@@ -22,6 +22,6 @@ on:
 jobs:
   PRStateChangedPriv:
     name: PRStateChangedPriv
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRStateChangedPriv.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRStateChangedPriv.yml@main-cache-builds
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
