@@ -1,4 +1,4 @@
-name: PRRecheck
+name: PRReCheck
 run-name: "PR ${{github.event.number}} Recheck"
 on:
   pull_request_target:
@@ -9,10 +9,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  PRCheck:
-    name: PRCheck
+  Check:
+    name: Check
     if: ${{ github.event.label.name == vars.RECHECKPR_LABEL }}
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskRecheckPR.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskRecheckPR.yml@main-cache-builds
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
       

@@ -10,7 +10,7 @@
 # privileges needed to add and remove labels and comments.  The
 # accompanying OnPRStateChangedPriv workflow does just that.
 
-name: PRStateChanged
+name: PRChanged
 run-name: "PR ${{github.event.number}} ${{github.event.action}} by ${{ github.actor }}"
 on:
   pull_request:
@@ -59,8 +59,8 @@ jobs:
           action-vars: ${{ toJSON(steps.setvars.outputs) }}
           action-inputs: ${{ toJSON(steps.testsuitepr.outputs) }}
 
-  PRCheck:
-    name: PRCheck
+  Check:
+    name: Check
     needs: Setup
     uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main-cache-builds
     with:

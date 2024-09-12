@@ -1,4 +1,4 @@
-name: PRMergeApproved
+name: MergePR
 run-name: "PR ${{github.event.number}} MergeApproved"
 on:
   pull_request_target:
