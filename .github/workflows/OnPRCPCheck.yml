@@ -11,6 +11,4 @@ jobs:
       group: cpcheck-${{ github.base_ref }}-${{ github.ref_name }}
       cancel-in-progress: true
     name: "run-cpcheck"
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRCPCheck.yml@main
-    secrets:
-      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRCPCheck.yml@main-pr-target

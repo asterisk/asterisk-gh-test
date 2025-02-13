@@ -11,6 +11,4 @@ jobs:
       group: recheck-${{ github.base_ref }}-${{ github.ref_name }}
       cancel-in-progress: true
     name: "run-recheck"
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRReCheck.yml@main
-    secrets:
-      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRReCheck.yml@main-pr-target
