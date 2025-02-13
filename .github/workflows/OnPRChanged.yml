@@ -19,13 +19,12 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-concurrency:
-  group: check-${{ github.event.number }}
-  cancel-in-progress: true
-
 jobs:
   PRChanged:
     name: "run-check"
+    concurrency:
+      group: check-${{ github.base_ref }}-${{ github.ref_name }}
+      cancel-in-progress: true
     uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRChanged.yml@main
     secrets:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
