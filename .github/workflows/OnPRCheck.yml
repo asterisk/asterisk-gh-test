@@ -11,4 +11,4 @@ jobs:
     concurrency:
       group: check-${{ github.triggering_actor }}-${{ github.head_ref }}
       cancel-in-progress: true
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRCheck.yml@main
+    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskPRCheck.yml@main-testsuite-run-testsuite
